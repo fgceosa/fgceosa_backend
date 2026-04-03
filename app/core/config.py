@@ -1,0 +1,293 @@
+import secrets
+import warnings
+from typing import Annotated, Any, Literal
+
+from pydantic import (
+    AnyUrl,
+    BeforeValidator,
+    EmailStr,
+    HttpUrl,
+    PostgresDsn,
+    computed_field,
+    model_validator,
+)
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing_extensions import Self
+
+
+def parse_cors(v: Any) -> list[str] | str:
+    if isinstance(v, str) and not v.startswith("["):
+        return [i.strip() for i in v.split(",")]
+    elif isinstance(v, list | str):
+        return v
+    raise ValueError(v)
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        # Use top level .env file (one level above ./backend/)
+        env_file="../.env",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
+    API_V1_STR: str = "/api/v1"
+    SECRET_KEY: str = "changethis"
+    # 60 minutes * 24 hours * 8 days = 8 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
+    FRONTEND_HOST: str = "https://app.qorebit.ai"
+    ENVIRONMENT: Literal["local", "staging", "production"] = "local"
+
+    BACKEND_CORS_ORIGINS: Annotated[
+        list[AnyUrl] | str, BeforeValidator(parse_cors)
+    ] = []
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def all_cors_origins(self) -> list[str]:
+        origins = [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
+            self.FRONTEND_HOST,
+            "http://localhost:3000",
+            "https://localhost:3000",
+            "http://127.0.0.1:3000",
+            "https://127.0.0.1:3000",
+            "http://localhost:3001",
+            "https://localhost:3001",
+            "http://127.0.0.1:3001",
+            "https://127.0.0.1:3001",
+            "http://localhost:5173",
+            "https://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://127.0.0.1:5173"
+        ]
+        return origins
+
+    PROJECT_NAME: str
+    SENTRY_DSN: HttpUrl | None = None
+    POSTGRES_SERVER: str
+    POSTGRES_PORT: int = 5432
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str = ""
+    POSTGRES_DB: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _strip_whitespace(cls, data: Any) -> Any:
+        """Strip whitespace from critical strings"""
+        if isinstance(data, dict):
+            for key in ["POSTGRES_SERVER", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", 
+                        "COPILOT_POSTGRES_SERVER", "COPILOT_POSTGRES_USER", "COPILOT_POSTGRES_PASSWORD", "COPILOT_POSTGRES_DB"]:
+                if key in data and isinstance(data[key], str):
+                    data[key] = data[key].strip()
+        return data
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
+        # For Render PostgreSQL internal connections: no SSL needed
+        # Internal hostnames look like: dpg-xxx-a (no .render.com suffix)
+        # External hostnames have .oregon-postgres.render.com and need SSL
+        is_render_internal = (
+            self.POSTGRES_SERVER.startswith("dpg-") and 
+            ".render.com" not in self.POSTGRES_SERVER
+        )
+        
+        if self.ENVIRONMENT == "local":
+            query = None
+        else:
+            # Force SSL for ALL non-local environments to handle public IP routing
+            query = "sslmode=require"
+        
+        return PostgresDsn.build(
+            scheme="postgresql+psycopg",
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_SERVER,
+            port=self.POSTGRES_PORT,
+            path=self.POSTGRES_DB,
+            query=query,
+        )
+
+    SMTP_TLS: bool = True
+    SMTP_SSL: bool = False
+    SMTP_PORT: int = 587
+    SMTP_HOST: str | None = None
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    EMAILS_FROM_EMAIL: EmailStr | None = None
+    EMAILS_FROM_NAME: str | None = None
+
+    @model_validator(mode="after")
+    def _set_default_emails_from(self) -> Self:
+        if not self.EMAILS_FROM_NAME:
+            self.EMAILS_FROM_NAME = self.PROJECT_NAME
+        return self
+
+    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
+
+    # Postmark Email Service Configuration
+    POSTMARK_SERVER_TOKEN: str | None = None
+    POSTMARK_MESSAGE_STREAM: str = "outbound"  # Default stream for transactional emails
+    EMAIL_PROVIDER: Literal["smtp", "postmark"] = "smtp"  # smtp or postmark
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def emails_enabled(self) -> bool:
+        if self.EMAIL_PROVIDER == "postmark":
+            return bool(self.POSTMARK_SERVER_TOKEN and self.EMAILS_FROM_EMAIL)
+        return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
+
+    EMAIL_TEST_USER: EmailStr = "test@example.com"
+    FIRST_SUPERUSER: EmailStr
+    FIRST_SUPERUSER_PASSWORD: str
+    
+    # OpenRouter Configuration
+    OPENROUTER_API_KEY: str = ""
+    AI_MODEL: str = "openai/gpt-4o"  # Free model on OpenRouter
+
+    # RequestyAI Configuration (for AI Engine endpoints)
+    REQUESTY_AI_BASE_URL: str = "https://router.requesty.ai/v1"
+    REQUESTY_AI_API_KEY: str = ""
+    REQUESTY_AI_TIMEOUT: int = 60  # Timeout in seconds
+    REQUESTY_AI_MAX_RETRIES: int = 3  # Maximum number of retries
+
+    # Tavily Search API Configuration (for web search in AI chat)
+    TAVILY_API_KEY: str = ""  # Get free API key at https://tavily.com
+
+    # Payment Provider Configuration
+    PAYMENT_PROVIDER: str = "flutterwave"  # Active provider: flutterwave, monnify
+
+    # Flutterwave Payment Gateway Configuration (PRIMARY)
+    # V3 API - Supports both TEST and LIVE keys
+    FLW_SECRET_KEY: str = ""  # FLWSECK_TEST-... (test) or FLWSECK-... (live)
+    FLW_PUBLIC_KEY: str = ""  # FLWPUBK_TEST-... (test) or FLWPUBK-... (live)
+    FLW_ENCRYPTION_KEY: str = ""  # Optional, for card payments
+    FLW_WEBHOOK_SECRET: str = ""  # For verifying webhook signatures
+    FLW_BASE_URL: str = "https://api.flutterwave.com/v3"  # V3 API
+
+    # Monnify Payment Gateway Configuration
+    MONNIFY_BASE_URL: str = "https://sandbox.monnify.com"  # Use https://api.monnify.com for production
+    MONNIFY_API_KEY: str = ""
+    MONNIFY_SECRET_KEY: str = ""
+    MONNIFY_CONTRACT_CODE: str = ""
+    MONNIFY_WEBHOOK_SECRET: str = ""  # For verifying webhook signatures
+
+    # Credit Conversion Rate
+    NAIRA_TO_CREDIT_RATE: int = 1650  # ₦1650 = 1 AI Credit (USD equivalent)
+
+    # Google OAuth Configuration (for Google Drive integration)
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = ""
+
+    # Cloudflare R2 Storage Configuration
+    R2_ENDPOINT_URL: str = ""  # https://<account_id>.r2.cloudflarestorage.com
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_BUCKET_NAME: str = "qorebit-documents"
+    R2_PUBLIC_URL: str = ""  # Public URL for accessing files
+
+    # Redis Configuration
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    # Celery Configuration
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+
+    # RequestyAI API URL (for embeddings)
+    REQUESTY_API_URL: str = "https://router.requesty.ai/v1"
+    REQUESTY_API_KEY: str = ""
+
+    # Postmark API Token (for email tool)
+    POSTMARK_API_TOKEN: str = ""
+
+    # Copilot Hub Database (separate pgvector database)
+    # Uses separate database for vector embeddings support
+    COPILOT_POSTGRES_SERVER: str = "localhost"
+    COPILOT_POSTGRES_PORT: int = 5433  # Different port for pgvector database
+    COPILOT_POSTGRES_USER: str = "qorebit_admin"
+    COPILOT_POSTGRES_PASSWORD: str = ""
+    COPILOT_POSTGRES_DB: str = "qorebit_db"
+
+    @model_validator(mode="after")
+    def _fix_production_defaults(self) -> Self:
+        # 1. Handle full URL provided in POSTGRES_SERVER (common mistake)
+        if self.POSTGRES_SERVER.startswith("postgresql"):
+            try:
+                from pydantic import PostgresDsn
+                dsn = PostgresDsn(self.POSTGRES_SERVER)
+                self.POSTGRES_SERVER = dsn.host or self.POSTGRES_SERVER
+                self.POSTGRES_PORT = dsn.port or self.POSTGRES_PORT
+                self.POSTGRES_USER = dsn.user or self.POSTGRES_USER
+                self.POSTGRES_PASSWORD = dsn.password or self.POSTGRES_PASSWORD
+                self.POSTGRES_DB = dsn.path.lstrip("/") if dsn.path else self.POSTGRES_DB
+            except Exception:
+                pass
+
+        # 2. In production (e.g. Render), default localhost/5433 won't work.
+        if self.ENVIRONMENT != "local":
+            if self.COPILOT_POSTGRES_SERVER == "localhost":
+                self.COPILOT_POSTGRES_SERVER = self.POSTGRES_SERVER
+            
+            if self.COPILOT_POSTGRES_PORT == 5433:
+                 self.COPILOT_POSTGRES_PORT = self.POSTGRES_PORT
+            
+            if self.COPILOT_POSTGRES_USER == "qorebit_admin" and self.POSTGRES_USER != "qorebit_admin":
+                self.COPILOT_POSTGRES_USER = self.POSTGRES_USER
+            
+            if not self.COPILOT_POSTGRES_PASSWORD:
+                self.COPILOT_POSTGRES_PASSWORD = self.POSTGRES_PASSWORD
+
+            if self.COPILOT_POSTGRES_DB == "qorebit_db" and self.POSTGRES_DB != "qorebit_db":
+                self.COPILOT_POSTGRES_DB = self.POSTGRES_DB
+
+        return self
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def COPILOT_DATABASE_URI(self) -> PostgresDsn:
+        """Database URI for Copilot Hub (with pgvector support)"""
+        # For Render PostgreSQL internal connections: no SSL needed
+        is_render_internal = (
+            self.COPILOT_POSTGRES_SERVER.startswith("dpg-") and 
+            ".render.com" not in self.COPILOT_POSTGRES_SERVER
+        )
+        
+        if self.ENVIRONMENT == "local":
+            query = None
+        else:
+            # Force SSL for vector DB in production
+            query = "sslmode=require"
+        
+        return PostgresDsn.build(
+            scheme="postgresql+psycopg",
+            username=self.COPILOT_POSTGRES_USER,
+            password=self.COPILOT_POSTGRES_PASSWORD or self.POSTGRES_PASSWORD,
+            host=self.COPILOT_POSTGRES_SERVER,
+            port=self.COPILOT_POSTGRES_PORT,
+            path=self.COPILOT_POSTGRES_DB,
+            query=query,
+        )
+
+    def _check_default_secret(self, var_name: str, value: str | None) -> None:
+        if value == "changethis":
+            message = (
+                f'The value of {var_name} is "changethis", '
+                "for security, please change it, at least for deployments."
+            )
+            if self.ENVIRONMENT == "local":
+                warnings.warn(message, stacklevel=1)
+            else:
+                raise ValueError(message)
+
+    @model_validator(mode="after")
+    def _enforce_non_default_secrets(self) -> Self:
+        self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
+        self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
+        self._check_default_secret(
+            "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
+        )
+
+        return self
+
+
+settings = Settings()  # type: ignore

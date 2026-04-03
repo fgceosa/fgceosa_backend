@@ -1,0 +1,101 @@
+services:
+  - type: web
+    name: qorebit-backend
+    
+    runtime: docker
+    repo: https://github.com/rockscaleai/qorebit-backend.git
+    branch: production
+    dockerfilePath: ./Dockerfile
+    region: oregon
+    plan: starter
+    healthCheckPath: /api/v1/utils/health-check
+    preDeployCommand: bash scripts/migrate.sh
+    envVars:
+      - key: PROJECT_NAME
+        value: Qorebit
+      - key: ENVIRONMENT
+        value: production
+      - key: FRONTEND_HOST
+        sync: false
+      - key: BACKEND_CORS_ORIGINS
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: POSTGRES_SERVER
+        fromDatabase:
+          name: qorebit-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: qorebit-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: qorebit-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: qorebit-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: qorebit-postgres
+          property: password
+      - key: FIRST_SUPERUSER
+        sync: false
+      - key: FIRST_SUPERUSER_PASSWORD
+        generateValue: true
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: EMAILS_FROM_EMAIL
+        sync: false
+      - key: EMAILS_FROM_NAME
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      # Monnify Payment Gateway Configuration
+      - key: MONNIFY_BASE_URL
+        value: https://api.monnify.com
+      - key: MONNIFY_API_KEY
+        sync: false
+      - key: MONNIFY_SECRET_KEY
+        sync: false
+      - key: MONNIFY_CONTRACT_CODE
+        sync: false
+      - key: MONNIFY_WEBHOOK_SECRET
+        generateValue: true
+      # Credit System Configuration
+      - key: NAIRA_TO_CREDIT_RATE
+        value: 25
+      
+      # Copilot Database Configuration (uses same DB, different schema)
+      - key: COPILOT_POSTGRES_SERVER
+        fromDatabase:
+          name: qorebit-postgres
+          property: host
+      - key: COPILOT_POSTGRES_PORT
+        fromDatabase:
+          name: qorebit-postgres
+          property: port
+      - key: COPILOT_POSTGRES_DB
+        fromDatabase:
+          name: qorebit-postgres
+          property: database
+      - key: COPILOT_POSTGRES_USER
+        fromDatabase:
+          name: qorebit-postgres
+          property: user
+      - key: COPILOT_POSTGRES_PASSWORD
+        fromDatabase:
+          name: qorebit-postgres
+          property: password
+
+databases:
+  - name: qorebit-postgres
+    databaseName: qorebit
+    user: qorebit
+    plan: free

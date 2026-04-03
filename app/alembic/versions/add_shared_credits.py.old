@@ -1,0 +1,64 @@
+"""Add shared credits functionality
+
+Revision ID: add_shared_credits
+Revises: add_rbac_tables
+Create Date: 2025-01-19 00:00:00.000000
+
+"""
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+import uuid
+
+# revision identifiers, used by Alembic.
+revision = 'add_shared_credits'
+down_revision = 'drop_item_table'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    """Add credits column to user table and create credit transaction table"""
+    
+    # Add credits column to user table
+    op.add_column('user',
+        sa.Column('credits', sa.Integer(), nullable=False, server_default='0')
+    )
+    
+    # Create credittransaction table
+    op.create_table('credittransaction',
+        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False, default=uuid.uuid4),
+        sa.Column('sender_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('recipient_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('amount', sa.Integer(), nullable=False),
+        sa.Column('message', sa.String(length=500), nullable=True),
+        sa.Column('status', sa.String(length=20), nullable=False, server_default='Pending'),
+        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('now()')),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('now()')),
+        sa.ForeignKeyConstraint(['sender_id'], ['user.id'], name='fk_credittransaction_sender'),
+        sa.ForeignKeyConstraint(['recipient_id'], ['user.id'], name='fk_credittransaction_recipient'),
+        sa.PrimaryKeyConstraint('id'),
+        sa.CheckConstraint('amount > 0', name='check_amount_positive')
+    )
+    
+    # Create indexes for better query performance
+    op.create_index('ix_credittransaction_sender_id', 'credittransaction', ['sender_id'])
+    op.create_index('ix_credittransaction_recipient_id', 'credittransaction', ['recipient_id'])
+    op.create_index('ix_credittransaction_created_at', 'credittransaction', ['created_at'])
+    op.create_index('ix_credittransaction_status', 'credittransaction', ['status'])
+
+
+def downgrade():
+    """Remove shared credits functionality"""
+    
+    # Drop indexes
+    op.drop_index('ix_credittransaction_status', table_name='credittransaction')
+    op.drop_index('ix_credittransaction_created_at', table_name='credittransaction')
+    op.drop_index('ix_credittransaction_recipient_id', table_name='credittransaction')
+    op.drop_index('ix_credittransaction_sender_id', table_name='credittransaction')
+    
+    # Drop credittransaction table
+    op.drop_table('credittransaction')
+    
+    # Remove credits column from user table
+    op.drop_column('user', 'credits')

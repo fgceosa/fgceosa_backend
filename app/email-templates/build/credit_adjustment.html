@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Adjustment Notification</title>
+</head>
+
+<body
+    style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #ffffff;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <div
+            style="background-color: #0047AB; padding: 40px 20px; text-align: center; border-radius: 12px; margin-bottom: 20px;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
+                Credit Adjustment Notice
+            </h1>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 20px; background-color: #fafbfc; border-radius: 12px;">
+            <p style="font-size: 16px; color: #333333; margin-bottom: 24px;">Hello,</p>
+
+            <p style="font-size: 16px; color: #333333; line-height: 1.6; margin-bottom: 30px;">
+                This is to notify you that <span style="color: #0047AB; font-weight: 700; font-size: 18px;">{{
+                    amount }} credits</span> have been <span style="font-weight: 700;">{{ type_display }}</span> your
+                organization's wallet: <span style="font-weight: 700;">{{ org_name }}</span>.
+            </p>
+
+            <!-- Details Box -->
+            <div
+                style="background-color: #ffffff; border-left: 4px solid #0047AB; border-radius: 4px; padding: 25px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <div style="margin-bottom: 12px; font-size: 15px; color: #555555;">
+                    <span
+                        style="font-weight: 700; color: #333333; display: inline-block; width: 140px;">Organization:</span>
+                    {{ org_name }}
+                </div>
+                <div style="margin-bottom: 12px; font-size: 15px; color: #555555;">
+                    <span style="font-weight: 700; color: #333333; display: inline-block; width: 140px;">Adjustment
+                        Type:</span>
+                    {{ type_display }}
+                </div>
+                <div style="margin-bottom: 12px; font-size: 15px; color: #555555;">
+                    <span style="font-weight: 700; color: #333333; display: inline-block; width: 140px;">Amount:</span>
+                    {{ amount }} credits
+                </div>
+                <div style="margin-bottom: 12px; font-size: 15px; color: #555555;">
+                    <span style="font-weight: 700; color: #333333; display: inline-block; width: 140px;">Reason:</span>
+                    {{ reason }}
+                </div>
+                <div style="margin-bottom: 12px; font-size: 15px; color: #555555;">
+                    <span style="font-weight: 700; color: #333333; display: inline-block; width: 140px;">New
+                        Balance:</span>
+                    <span style="color: #0047AB; font-weight: 700;">{{ new_balance }} credits</span>
+                </div>
+                <div style="font-size: 15px; color: #555555;">
+                    <span style="font-weight: 700; color: #333333; display: inline-block; width: 140px;">Date:</span>
+                    {{ date }}
+                </div>
+            </div>
+
+            <p style="font-size: 16px; line-height: 1.6; color: #333333; margin-bottom: 40px;">
+                {% if adjustment_type == "add" %}
+                These credits have been added to your organization wallet and are ready to use!
+                {% else %}
+                These credits have been deducted from your organization wallet.
+                {% endif %}
+            </p>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin-bottom: 20px;">
+                <a href="{{ dashboard_link }}"
+                    style="background-color: #0047AB; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; display: inline-block;">View
+                    Organization Wallet</a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; padding: 30px 20px; color: #8898aa; font-size: 13px;">
+            <p style="margin-bottom: 10px;">This is an automated notification from {{ project_name }}</p>
+            <p style="margin: 0;">© 2025 {{ project_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+
+</html>
