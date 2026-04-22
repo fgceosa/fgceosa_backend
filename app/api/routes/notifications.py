@@ -1,104 +1,115 @@
-from typing import Any
 import uuid
+import logging
+from typing import Any, List
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session
+from sqlmodel import select, func, desc
 
-from app.api import deps
-from app.notification_repository import (
-    get_user_notifications,
-    mark_as_read,
-    mark_all_as_read,
-    delete_notification
+from app.api.deps import (
+    CurrentUser,
+    SessionDep,
 )
-from app.models import NotificationPublic, NotificationsPublic, Message
+from app.models import (
+    Notification,
+    NotificationPublic,
+    NotificationsPublic,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
-
 @router.get("", response_model=NotificationsPublic)
 def read_notifications(
-    session: deps.SessionDep,
-    current_user: deps.CurrentUser,
-    skip: int = 0,
-    limit: int = 20,
-    unread_only: bool = False,
+    session: SessionDep,
+    current_user: CurrentUser,
+    page: int = 1,
+    page_size: int = 20,
+    unread_only: bool = False
 ) -> Any:
-    """Retrieve notifications."""
-    db_objs, total, unread_count = get_user_notifications(
-        session=session,
-        user_id=current_user.id,
-        skip=skip,
-        limit=limit,
-        unread_only=unread_only
-    )
+    """
+    Retrieve notifications for the current user.
+    """
+    statement = select(Notification).where(Notification.user_id == current_user.id).order_by(desc(Notification.created_at))
     
-    # Map to public schema with metadata handling
-    notifications_public = []
-    for obj in db_objs:
-        notifications_public.append(
-            NotificationPublic(
-                id=obj.id,
-                userId=obj.user_id,
-                title=obj.title,
-                description=obj.description,
-                type=obj.type,
-                isRead=obj.is_read,
-                createdAt=obj.created_at,
-                metadata=obj.metadata_json
-            )
-        )
+    if unread_only:
+        statement = statement.where(Notification.is_read == False)
+        
+    count_statement = select(func.count()).select_from(statement.subquery())
+    count = session.exec(count_statement).one()
     
-    return NotificationsPublic(
-        data=notifications_public,
-        count=total,
-        unreadCount=unread_count
-    )
+    # Calculate unread count regardless of filters
+    unread_count = session.exec(
+        select(func.count()).select_from(Notification).where(Notification.user_id == current_user.id).where(Notification.is_read == False)
+    ).one()
+    
+    skip = (page - 1) * page_size
+    notifications = session.exec(statement.offset(skip).limit(page_size)).all()
+    
+    return {
+        "data": notifications,
+        "count": count,
+        "unreadCount": unread_count
+    }
 
-
-@router.patch("/{id}/read", response_model=NotificationPublic)
-def mark_notification_read(
+@router.patch("/{notification_id}/read", response_model=NotificationPublic)
+def mark_notification_as_read(
     *,
-    session: deps.SessionDep,
-    id: uuid.UUID,
-    current_user: deps.CurrentUser,
+    session: SessionDep,
+    current_user: CurrentUser,
+    notification_id: uuid.UUID
 ) -> Any:
-    """Mark a notification as read."""
-    notification = mark_as_read(session=session, notification_id=id, user_id=current_user.id)
+    """
+    Mark a specific notification as read.
+    """
+    notification = session.get(Notification, notification_id)
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
+    if notification.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this notification")
     
-    return NotificationPublic(
-        id=notification.id,
-        userId=notification.user_id,
-        title=notification.title,
-        description=notification.description,
-        type=notification.type,
-        isRead=notification.is_read,
-        createdAt=notification.created_at,
-        metadata=notification.metadata_json
-    )
+    notification.is_read = True
+    session.add(notification)
+    session.commit()
+    session.refresh(notification)
+    return notification
 
-
-@router.patch("/read-all", response_model=Message)
-def mark_all_notifications_read(
-    session: deps.SessionDep,
-    current_user: deps.CurrentUser,
-) -> Any:
-    """Mark all notifications as read."""
-    count = mark_all_as_read(session=session, user_id=current_user.id)
-    return Message(message=f"Successfully marked {count} notifications as read")
-
-
-@router.delete("/{id}", response_model=Message)
-def delete_user_notification(
+@router.patch("/read-all")
+def mark_all_notifications_as_read(
     *,
-    session: deps.SessionDep,
-    id: uuid.UUID,
-    current_user: deps.CurrentUser,
+    session: SessionDep,
+    current_user: CurrentUser
 ) -> Any:
-    """Delete a notification."""
-    success = delete_notification(session=session, notification_id=id, user_id=current_user.id)
-    if not success:
+    """
+    Mark all notifications for the current user as read.
+    """
+    statement = select(Notification).where(Notification.user_id == current_user.id).where(Notification.is_read == False)
+    notifications = session.exec(statement).all()
+    
+    for notification in notifications:
+        notification.is_read = True
+        session.add(notification)
+        
+    session.commit()
+    return {"message": f"Marked {len(notifications)} notifications as read"}
+
+@router.delete("/{notification_id}")
+def delete_notification(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    notification_id: uuid.UUID
+) -> Any:
+    """
+    Delete a specific notification.
+    """
+    notification = session.get(Notification, notification_id)
+    if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
-    return Message(message="Notification deleted successfully")
+    if notification.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this notification")
+    
+    session.delete(notification)
+    session.commit()
+    return {"message": "Notification deleted"}

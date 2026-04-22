@@ -85,39 +85,23 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.on_event("startup")
 async def startup_event():
-    """Sync with RequestyAI on startup to ensure we have latest models"""
+    """Initialize FGCEOSA Database and Roles on startup"""
     import logging
     logger = logging.getLogger(__name__)
 
     try:
-        from app.services.requesty_sync import requesty_sync_service
-        from app.core.db import engine, init_copilot_db, init_db
+        from app.core.db import engine, init_db
         from sqlmodel import Session
         
-        # Initialize Copilot DB (Create schema and extension if missing)
-        logger.info("Initializing Copilot database schema...")
-        init_copilot_db()
-        logger.info("Copilot database initialization complete.")
-
         # Initialize Main DB (Create roles and first superuser if missing)
         logger.info("Initializing Main database (roles and superuser)...")
         with Session(engine) as session:
             init_db(session)
         logger.info("Main database initialization complete.")
 
-        async def do_sync():
-            try:
-                with Session(engine) as session:
-                    logger.info("Auto-syncing models with RequestyAI catalog...")
-                    await requesty_sync_service.sync_models(session)
-                    logger.info("Auto-sync complete.")
-            except Exception as sync_e:
-                logger.error(f"Background auto-sync failed: {sync_e}")
-
-        import asyncio
-        asyncio.create_task(do_sync())
     except Exception as e:
         logger.error(f"Critical error during startup initialization: {e}")
+
 
 # Mount static files for uploads (avatars, etc.)
 uploads_dir = Path("uploads")

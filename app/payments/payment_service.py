@@ -159,12 +159,8 @@ class PaymentService:
             meta=meta
         )
 
-        # Fetch dynamic rate from platform settings
-        from app.models import PlatformSettings
-        platform_settings = db.exec(select(PlatformSettings)).first()
-        exchange_rate = 1650.0  # Default fallback
-        if platform_settings and "payments" in platform_settings.payments:
-            exchange_rate = float(platform_settings.payments.get("nairaToCreditRate", 1650.0))
+        # Use rate from settings
+        exchange_rate = float(getattr(settings, "NAIRA_TO_CREDIT_RATE", 1650.0))
         
         # Calculate AI credits based on conversion rate
         ai_credits = amount / exchange_rate
@@ -431,12 +427,8 @@ class PaymentService:
 
         if not topup:
             print(f"DEBUG: CRITICAL - Webhook could not be associated with any TopUp record. Reference: {reference}, Email: {payload.get('data', {}).get('customer', {}).get('email')}")
-            # Fetch dynamic rate from platform settings
-            from app.models import PlatformSettings
-            platform_settings = db.exec(select(PlatformSettings)).first()
-            exchange_rate = 1650.0  # Default fallback
-            if platform_settings and "payments" in platform_settings.payments:
-                exchange_rate = float(platform_settings.payments.get("nairaToCreditRate", 1650.0))
+            # Use rate from settings
+            exchange_rate = float(getattr(settings, "NAIRA_TO_CREDIT_RATE", 1650.0))
 
             ai_credits = amount / exchange_rate
 

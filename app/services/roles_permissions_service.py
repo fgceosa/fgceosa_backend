@@ -21,40 +21,21 @@ from app.schemas.roles_permissions import (
 
 # System roles that cannot be deleted or have name changed
 SYSTEM_ROLES = {
-    "platform_super_admin",
-    "platform_admin",
-    "billing_revenue_admin",
-    "operations_admin",
-    "ai_copilot_admin",
-    "support_admin",
-    "org_super_admin",
-    "org_admin",
-    "org_member",
-    "staff",
-    "user"
+    "super_admin",
+    "admin",
+    "member"
 }
 
 # Permission categories for grouping
 PERMISSION_CATEGORIES = {
-    "organization:": "Workspace Management",
-    "org:": "Workspace Management",
-    "workspace:": "Workspace Management",
-    "user:": "Users & Access",
-    "team:": "Users & Access",
-    "role:": "Users & Access",
-    "credit:": "Credits",
-    "billing:": "Billing & Revenue",
-    "revenue:": "Billing & Revenue",
-    "copilot:": "Copilots",
-    "model:": "Model Library",
-    "models:": "Model Library",
-    "providers:": "Model Library",
-    "analytics:": "Analytics",
+    "member:": "Members & Access",
+    "user:": "Members & Access",
+    "role:": "Members & Access",
+    "payment:": "Payments & Dues",
+    "announcement:": "Announcements",
+    "event:": "Events",
     "dashboard:": "Analytics",
-    "settings:": "Settings",
-    "enterprise:": "System Settings",
-    "api:": "System Settings",
-    "playground:": "System Settings",
+    "system:": "System Settings",
 }
 
 

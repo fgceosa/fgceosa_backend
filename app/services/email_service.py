@@ -40,6 +40,7 @@ class EmailType(str, Enum):
     CREDIT_PURCHASED = "credit_purchased"
     API_KEY_CREATED = "api_key_created"
     TEST = "test"
+    PAYMENT_REMINDER = "payment_reminder"
 
 
 @dataclass
@@ -271,6 +272,32 @@ class EmailService:
                     <p>Click the link below to join:</p>
                     <p><a href="{context.get('invitation_link', '#')}">{context.get('invitation_link', 'Join Team')}</a></p>
                     {f"<p>Message: {context.get('message')}</p>" if context.get('message') else ""}
+                </body>
+                </html>
+                """
+
+            if template_name == "payment_reminder.html":
+                return f"""
+                <!DOCTYPE html>
+                <html>
+                <body style="font-family: 'Inter', Arial, sans-serif; padding: 40px; background-color: #f9f9f9;">
+                    <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 24px; border: 1px solid #eee;">
+                        <h2 style="color: #8B0000; font-size: 24px; font-weight: 800; margin-bottom: 24px;">Action Required: Payment Reminder</h2>
+                        <p style="font-size: 16px; color: #444; line-height: 1.6;">Hello <strong>{context.get('username', 'Member')}</strong>,</p>
+                        <p style="font-size: 16px; color: #444; line-height: 1.6;">This is a friendly reminder regarding your outstanding dues for <strong>{context.get('description', 'the association')}</strong>.</p>
+                        
+                        <div style="margin: 32px 0; padding: 24px; background-color: #fef2f2; border-radius: 16px; border: 1px solid #fee2e2;">
+                            <div style="font-size: 12px; font-weight: 800; color: #8B0000; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Outstanding Balance</div>
+                            <div style="font-size: 32px; font-weight: 900; color: #8B0000;">₦{float(context.get('amount', 0)):,.2f}</div>
+                        </div>
+
+                        <p style="font-size: 15px; color: #666; margin-bottom: 32px;">Please click the button below to settle your balance and maintain your active membership status.</p>
+                        
+                        <a href="{context.get('payment_link', '#')}" style="display: inline-block; background-color: #8B0000; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 10px 15px -3px rgba(139, 0, 0, 0.2);">Clear Balance Now</a>
+                        
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 40px 0;">
+                        <p style="font-size: 12px; color: #999; text-align: center;">If you have already made this payment, please disregard this notice.</p>
+                    </div>
                 </body>
                 </html>
                 """
@@ -698,5 +725,45 @@ class EmailService:
                 "timestamp": datetime.utcnow().isoformat()
             },
         )
+    def send_payment_reminder(
+        self,
+        *,
+        email_to: str,
+        username: str,
+        amount: float,
+        due_date: str | None = None,
+        description: str | None = None,
+        payment_link: str | None = None,
+    ) -> Dict[str, Any]:
+        """Send payment reminder email"""
+        context = {
+            "project_name": settings.PROJECT_NAME,
+            "username": username,
+            "amount": amount,
+            "due_date": due_date,
+            "description": description or "Annual Alumni Dues",
+            "payment_link": payment_link or f"{settings.FRONTEND_HOST}/dashboard/payments",
+            "year": datetime.utcnow().year,
+        }
+
+        # Use fallback rendering since template might not exist yet
+        html_content = self.render_template(
+            template_name="payment_reminder.html",
+            context=context,
+        )
+
+        return self.send_email(
+            email_to=email_to,
+            subject=f"Action Required: Payment Reminder - {settings.PROJECT_NAME}",
+            html_content=html_content,
+            email_type=EmailType.PAYMENT_REMINDER,
+            metadata={
+                "username": username,
+                "amount": str(amount),
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+        )
+
+
 # Create singleton instance
 email_service = EmailService()

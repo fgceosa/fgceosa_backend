@@ -1,4 +1,4 @@
-from sqlmodel import Session, create_engine, select
+from sqlmodel import Session, create_engine, select, text
 
 from app import user_repository
 from app.core.config import settings
@@ -16,35 +16,7 @@ engine = create_engine(
     pool_use_lifo=True,
 )
 
-# Copilot Hub database engine (pgvector PostgreSQL)
-copilot_engine = create_engine(
-    str(settings.COPILOT_DATABASE_URI), 
-    pool_pre_ping=True,
-    pool_recycle=120,
-    pool_timeout=60,
-    pool_size=10,            # Separate pool for vector operations
-    max_overflow=5,          # Total connections: Main (30) + Copilot (15) = 45/97 limit
-    pool_use_lifo=True,
-)
 
-
-def init_copilot_db() -> None:
-    """Initialize copilot database: create schema and enable vector extension"""
-    from sqlalchemy import text
-    from sqlmodel import SQLModel
-    # Import all copilot models to register them with SQLModel metadata
-    import app.copilot.models 
-    
-    with copilot_engine.connect() as conn:
-        # Create schema if it doesn't exist
-        conn.execute(text("CREATE SCHEMA IF NOT EXISTS copilot;"))
-        # Enable vector extension
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-        conn.commit()
-    
-    # Create all tables registered in metadata (which will include the copilot schema ones)
-    # This won't affect the main database because we are using copilot_engine
-    SQLModel.metadata.create_all(copilot_engine)
 
 
 
@@ -60,7 +32,20 @@ def init_db(session: Session) -> None:
     # from sqlmodel import SQLModel
 
     # This works because the models are already imported and registered from app.models
-    # SQLModel.metadata.create_all(engine)
+    from sqlmodel import SQLModel
+    SQLModel.metadata.create_all(engine)
+
+    # Ensure system_settings has bank details columns (since create_all doesn't add columns)
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS bank_name TEXT;"))
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS account_number TEXT;"))
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS account_name TEXT;"))
+            conn.commit()
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Note: Could not automatically add columns to system_settings: {e}. This may be normal if they already exist.")
 
     from app.core.rbac_seed import seed_rbac
     
@@ -75,13 +60,13 @@ def init_db(session: Session) -> None:
             email=settings.FIRST_SUPERUSER,
             password=settings.FIRST_SUPERUSER_PASSWORD,
             is_superuser=True,
-            role="platform_super_admin"  # Explicitly assign platform_super_admin role
+            role="super_admin"  # Explicitly assign super_admin role
         )
         user = user_repository.create_user(session=session, user_create=user_in)
     else:
-        # Maintenance: Ensure existing superuser has the platform_super_admin role
+        # Maintenance: Ensure existing superuser has the super_admin role
         from app.models import UserRole, Role
-        psa_role = session.exec(select(Role).where(Role.name == "platform_super_admin")).first()
+        psa_role = session.exec(select(Role).where(Role.name == "super_admin")).first()
         if psa_role:
             existing_ur = session.exec(
                 select(UserRole).where(UserRole.user_id == user.id, UserRole.role_id == psa_role.id)

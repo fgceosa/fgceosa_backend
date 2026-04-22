@@ -7,8 +7,8 @@ logger = logging.getLogger(__name__)
 from sqlmodel import Session, select
 
 from app.core.security import get_password_hash, verify_password
-from app.models import User, UserCreate, UserUpdate, Role, UserRole, Organization, OrganizationMember
-from app.utils.tag_generator import assign_tag_number
+from app.models import User, UserCreate, UserUpdate, Role, UserRole
+from app.utils.membership_generator import assign_membership_id
 
 
 def create_user(
@@ -24,8 +24,6 @@ def create_user(
     db_obj = User.model_validate(
         user_create, update={
             "hashed_password": get_password_hash(user_create.password),
-            "account_type": account_type,
-            "organization_name": organization_name,
             "accepted_terms_at": datetime.now(timezone.utc) if accept_terms else None
         }
     )
@@ -42,7 +40,7 @@ def create_user(
     elif user_create.role:
         role_names = [user_create.role]
     else:
-        role_names = ["org_super_admin" if account_type == "organization" else "user"]
+        role_names = ["super_admin" if account_type == "organization" else "member"]
 
     for role_name in role_names:
         # Normalize role name
@@ -53,40 +51,21 @@ def create_user(
             session.add(user_role)
             
             # Update legacy superuser flag if applicable
-            admin_roles = ["platform_super_admin", "platform_admin", "admin", "Admin"]
+            admin_roles = ["super_admin", "admin"]
             if role_obj.name in admin_roles:
                 db_obj.is_superuser = True
     
-    # NEW: Automatically create Organization and Membership for organization accounts
-    if account_type == "organization" and organization_name:
-        # 1. Create the Organization
-        new_org = Organization(
-            name=organization_name,
-            owner_id=db_obj.id,
-            is_active=True
-        )
-        session.add(new_org)
-        session.flush() # Get org ID without committing whole transaction yet
-        
-        # 2. Add the user as an org_super_admin member
-        org_member = OrganizationMember(
-            organization_id=new_org.id,
-            user_id=db_obj.id,
-            role="org_super_admin",
-            status="active",
-            joined_at=datetime.now(timezone.utc)
-        )
-        session.add(org_member)
+    # Organizations removed from schema
 
     session.commit()
     session.refresh(db_obj)
 
-    # Generate and assign unique tag number (e.g., @qor7k2m9p)
+    # Generate and assign unique membership ID
     try:
-        assign_tag_number(session=session, user=db_obj, commit=True)
+        assign_membership_id(session=session, user=db_obj, commit=True)
     except Exception as e:
         # Log error but don't fail user creation
-        logger.error(f"Failed to assign tag number to user {db_obj.id}: {e}")
+        logger.error(f"Failed to assign membership ID to user {db_obj.id}: {e}")
 
     return db_obj
 
@@ -111,7 +90,7 @@ def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
         
         if roles:
             # Update legacy superuser flag if any admin-level role is present
-            admin_roles = ["platform_super_admin", "platform_admin", "Admin"]
+            admin_roles = ["super_admin", "admin"]
             db_user.is_superuser = any(r.name in admin_roles for r in roles)
             
             # Clear existing roles and add new ones (Syncing)
@@ -122,13 +101,7 @@ def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
                 user_role = UserRole(user_id=db_user.id, role_id=role.id)
                 session.add(user_role)
                 
-                # NEW: Sync OrganizationMember role if the new role is an organization status role
-                # This ensures consistency between Identity Role and Org Team Table
-                if role.name.startswith("org_") or role.name == "member":
-                    org_members = session.exec(select(OrganizationMember).where(OrganizationMember.user_id == db_user.id)).all()
-                    for member in org_members:
-                        member.role = role.name
-                        session.add(member)
+                pass
         elif not role_names:
             # If empty list provided, clear all roles
             from sqlmodel import delete
@@ -205,20 +178,14 @@ def update_user_identity_role(*, session: Session, db_user: User, role_name: str
         raise ValueError(f"Role '{role_name}' does not exist.")
 
     # Update legacy superuser flag based on identity role
-    admin_roles = ["platform_super_admin", "platform_admin", "admin"]
+    admin_roles = ["super_admin", "admin"]
     db_user.is_superuser = role.name in admin_roles
 
     # Sync identity role (Strictly one role per identity-first model)
     db_user.user_roles = [UserRole(user_id=db_user.id, role_id=role.id)]
     session.add(db_user)
     
-    # NEW: Sync OrganizationMember role if the new role is an organization status role
-    # This ensures the Organization Dashboard (Team Table) reflects the Identity Role change
-    if normalized_name.startswith("org_") or normalized_name == "member":
-        org_members = session.exec(select(OrganizationMember).where(OrganizationMember.user_id == db_user.id)).all()
-        for member in org_members:
-            member.role = normalized_name
-            session.add(member)
+    # Organization logic removed
 
     # Commit and refresh
     # Log promotion/demotion (Audit Log Simulation)
