@@ -337,7 +337,7 @@ class Payment(SQLModel, table=True):
     amount: Decimal = Field(default=Decimal("0.00"), max_digits=10, decimal_places=2)
     currency: str = Field(default="NGN", max_length=10)
     payment_method: str | None = Field(default=None, max_length=50)
-    flutterwave_id: str | None = Field(default=None, max_length=255, index=True)
+    paystack_id: str | None = Field(default=None, max_length=255, index=True)
     description: str | None = Field(default=None, max_length=500)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -448,8 +448,8 @@ class SystemSettings(SQLModel, table=True):
     # Billing & Identity
     currency: str = Field(default="NGN", max_length=10)
     payment_enabled: bool = Field(default=True)
-    flutterwave_public_key: str | None = Field(default=None, max_length=255)
-    flutterwave_secret_key: str | None = Field(default=None, max_length=255)
+    paystack_public_key: str | None = Field(default=None, max_length=255)
+    paystack_secret_key: str | None = Field(default=None, max_length=255)
     
     # Invoice Config
     tax_percentage: Decimal = Field(default=Decimal("0.00"), max_digits=5, decimal_places=2)
@@ -477,8 +477,8 @@ class SystemSettingsUpdate(SQLModel):
     address: str | None = None
     currency: str | None = None
     payment_enabled: bool | None = None
-    flutterwave_public_key: str | None = None
-    flutterwave_secret_key: str | None = None
+    paystack_public_key: str | None = None
+    paystack_secret_key: str | None = None
     tax_percentage: Decimal | None = None
     invoice_footer_note: str | None = None
     default_member_status: str | None = None
@@ -498,6 +498,8 @@ class SystemSettingsPublic(SQLModel):
     address: str | None
     currency: str
     payment_enabled: bool
+    paystack_public_key: str | None = None
+    paystack_secret_key: str | None = None
     tax_percentage: Decimal
     invoice_footer_note: str | None
     default_member_status: str

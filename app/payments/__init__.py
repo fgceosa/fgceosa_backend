@@ -7,10 +7,8 @@ between payment providers (Flutterwave, Monnify, Paystack, Stripe, etc.)
 
 from app.payments.provider_protocol import PaymentProviderProtocol
 from app.payments.payment_factory import PaymentFactory
-from app.payments.payment_service import PaymentService
 
 __all__ = [
     'PaymentProviderProtocol',
     'PaymentFactory',
-    'PaymentService',
 ]

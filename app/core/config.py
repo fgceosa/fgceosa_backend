@@ -25,8 +25,8 @@ def parse_cors(v: Any) -> list[str] | str:
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        # Use top level .env file (one level above ./backend/)
-        env_file="../.env",
+        # Use top level .env file
+        env_file=".env",
         env_ignore_empty=True,
         extra="ignore",
     )
@@ -154,15 +154,13 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: str = ""  # Get free API key at https://tavily.com
 
     # Payment Provider Configuration
-    PAYMENT_PROVIDER: str = "flutterwave"  # Active provider: flutterwave, monnify
+    PAYMENT_PROVIDER: str = "paystack"  # Active provider: paystack, monnify
 
-    # Flutterwave Payment Gateway Configuration (PRIMARY)
-    # V3 API - Supports both TEST and LIVE keys
-    FLW_SECRET_KEY: str = ""  # FLWSECK_TEST-... (test) or FLWSECK-... (live)
-    FLW_PUBLIC_KEY: str = ""  # FLWPUBK_TEST-... (test) or FLWPUBK-... (live)
-    FLW_ENCRYPTION_KEY: str = ""  # Optional, for card payments
-    FLW_WEBHOOK_SECRET: str = ""  # For verifying webhook signatures
-    FLW_BASE_URL: str = "https://api.flutterwave.com/v3"  # V3 API
+    # Paystack Payment Gateway Configuration (PRIMARY)
+    PAYSTACK_SECRET_KEY: str = "" 
+    PAYSTACK_PUBLIC_KEY: str = ""
+    PAYSTACK_WEBHOOK_SECRET: str = ""  # For verifying webhook signatures (or use Secret Key if signatures use that)
+    PAYSTACK_BASE_URL: str = "https://api.paystack.co"
 
     # Monnify Payment Gateway Configuration
     MONNIFY_BASE_URL: str = "https://sandbox.monnify.com"  # Use https://api.monnify.com for production

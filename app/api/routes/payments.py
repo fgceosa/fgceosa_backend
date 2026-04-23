@@ -66,7 +66,7 @@ async def verify_payment(
     transaction_id: str = Query(...)
 ) -> Any:
     """
-    Verify a payment after member is redirected back from Flutterwave.
+    Verify a payment after member is redirected back from Paystack.
     """
     result = await payment_service.verify_transaction(session=session, transaction_id=transaction_id)
     

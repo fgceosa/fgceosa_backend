@@ -40,11 +40,11 @@ class PaymentFactory:
 
         Example:
             # In .env file
-            PAYMENT_PROVIDER=flutterwave
+            PAYMENT_PROVIDER=paystack
 
             # In code
             provider = PaymentFactory.get_provider()
-            # Returns FlutterwaveProvider instance
+            # Returns PaystackProvider instance
         """
         # Return cached provider if available
         if PaymentFactory._provider_cache is not None:
@@ -52,27 +52,18 @@ class PaymentFactory:
 
         provider_name = settings.PAYMENT_PROVIDER.lower()
 
-        if provider_name == "flutterwave":
-            from app.payments.providers.flutterwave import FlutterwaveProvider
-            PaymentFactory._provider_cache = FlutterwaveProvider()
+        if provider_name == "paystack":
+            from app.payments.providers.paystack import PaystackProvider
+            PaymentFactory._provider_cache = PaystackProvider()
 
         elif provider_name == "monnify":
             from app.payments.providers.monnify import MonnifyProvider
             PaymentFactory._provider_cache = MonnifyProvider()
 
-        # Add more providers here as needed
-        # elif provider_name == "paystack":
-        #     from app.payments.providers.paystack import PaystackProvider
-        #     PaymentFactory._provider_cache = PaystackProvider()
-        #
-        # elif provider_name == "stripe":
-        #     from app.payments.providers.stripe import StripeProvider
-        #     PaymentFactory._provider_cache = StripeProvider()
-
         else:
             raise ValueError(
                 f"Unsupported payment provider: {provider_name}. "
-                f"Supported providers: flutterwave, monnify"
+                f"Supported providers: paystack, monnify"
             )
 
         return PaymentFactory._provider_cache
@@ -92,7 +83,7 @@ class PaymentFactory:
         Get the name of the currently active provider.
 
         Returns:
-            Provider name string (e.g., 'flutterwave', 'monnify')
+            Provider name string (e.g., 'paystack', 'monnify')
         """
         return settings.PAYMENT_PROVIDER.lower()
 
@@ -107,5 +98,5 @@ class PaymentFactory:
         Returns:
             True if provider is available, False otherwise
         """
-        supported_providers = ["flutterwave", "monnify"]
+        supported_providers = ["paystack", "monnify"]
         return provider_name.lower() in supported_providers
