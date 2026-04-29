@@ -137,23 +137,9 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
         outstanding_desc = unpaid_dues[0].title
         outstanding_due_date = unpaid_dues[0].due_date.strftime("%b %d, %Y")
     else:
-        # Check for any pending payments specifically if no active arrears found
-        pending_payment = session.exec(
-            select(Payment).where(Payment.user_id == current_user.id, Payment.status == "pending")
-            .order_by(Payment.created_at.desc())
-        ).first()
-        
-        if pending_payment:
-            outstanding_amount = pending_payment.amount
-            outstanding_desc = pending_payment.description or "Pending Due Payment"
-            outstanding_due_date = pending_payment.created_at.strftime("%b %d, %Y")
-            # Synthesize an 'unpaid due' entry for the breakdown
-            unpaid_dues = [Due(
-                id=pending_payment.id, 
-                title=outstanding_desc, 
-                amount=pending_payment.amount, 
-                due_date=pending_payment.created_at
-            )]
+        outstanding_amount = Decimal("0.00")
+        outstanding_desc = None
+        outstanding_due_date = None
     
     # 2. Upcoming Events
     now = datetime.now(timezone.utc)
@@ -200,7 +186,8 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
             "date": p.created_at.strftime("%b %d, %Y"),
             "amount": float(p.amount),
             "status": "Paid" if p.status == "completed" else p.status.capitalize(),
-            "type": "subscription" if "dues" in (p.description or "").lower() else "event" if "event" in (p.description or "").lower() else "donation"
+            "type": "subscription" if "dues" in (p.description or "").lower() else "event" if "event" in (p.description or "").lower() else "donation",
+            "method": p.payment_method
         })
 
     # 4. Announcements
@@ -237,7 +224,13 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
         "outstandingTitle": outstanding_desc or "No Dues Found",
         "outstandingDueDate": outstanding_due_date or "Up to date",
         "unpaidDues": [
-            {"id": str(d.id), "title": d.title, "amount": float(d.amount)} 
+            {
+                "id": str(d.id), 
+                "title": d.title, 
+                "amount": float(d.amount),
+                "description": d.description,
+                "dueDate": d.due_date.strftime("%b %d, %Y") if d.due_date else "N/A"
+            } 
             for d in unpaid_dues
         ],
         "upcomingEvents": events_list,
