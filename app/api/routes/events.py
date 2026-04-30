@@ -91,7 +91,7 @@ def read_events(
     skip: int = 0,
     limit: int = 100
 ) -> Any:
-    statement = select(Event).order_by(desc(Event.created_at)).offset(skip).limit(limit)
+    statement = select(Event).order_by(Event.date.asc()).offset(skip).limit(limit)
     events = session.exec(statement).all()
     
     registered_event_ids = set()
