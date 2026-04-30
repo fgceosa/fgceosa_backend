@@ -122,32 +122,29 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
         select(Payment).where(Payment.user_id == current_user.id, Payment.status == "completed")
     ).all()
     
-    paid_dues_count = len(completed_payments)
     active_dues_sorted = sorted(active_dues, key=lambda x: x.due_date, reverse=True)
     
+    # Identify which dues are actually paid by checking payment descriptions
     unpaid_dues = []
-    outstanding_amount = Decimal("0.00")
-    outstanding_desc = None
-    outstanding_due_date = None
-
-    if len(active_dues_sorted) > paid_dues_count:
-        num_unpaid = len(active_dues_sorted) - paid_dues_count
-        unpaid_dues = active_dues_sorted[:num_unpaid]
-        outstanding_amount = sum([d.amount for d in unpaid_dues])
-        outstanding_desc = unpaid_dues[0].title
-        outstanding_due_date = unpaid_dues[0].due_date.strftime("%b %d, %Y")
-    else:
-        outstanding_amount = Decimal("0.00")
-        outstanding_desc = None
-        outstanding_due_date = None
+    paid_due_titles = [p.description for p in completed_payments if p.description]
+    
+    for due in active_dues_sorted:
+        # Check if any completed payment description contains this due's title
+        is_paid = any(due.title.lower() in p_desc.lower() for p_desc in paid_due_titles)
+        if not is_paid:
+            unpaid_dues.append(due)
+            
+    outstanding_amount = sum([d.amount for d in unpaid_dues])
+    outstanding_desc = unpaid_dues[0].title if unpaid_dues else None
+    outstanding_due_date = unpaid_dues[0].due_date.strftime("%b %d, %Y") if unpaid_dues and unpaid_dues[0].due_date else None
     
     # 2. Upcoming Events
     now = datetime.now(timezone.utc)
     upcoming_events = session.exec(
         select(Event)
         .where(Event.date >= now)
-        .order_by(Event.created_at.desc())
-        .limit(3)
+        .order_by(Event.date.asc())
+        .limit(10)
     ).all()
     
     events_list = []
@@ -195,7 +192,7 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
         select(Announcement)
         .where(Announcement.is_active == True)
         .order_by(Announcement.created_at.desc())
-        .limit(3)
+        .limit(10)
     ).all()
     
     ann_list = []

@@ -74,22 +74,34 @@ def create_announcement(
 @router.get("")
 def read_announcements(
     session: SessionDep,
+    current_user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
-    active_only: bool = False,
+    active_only: bool = True,
     category: str | None = None,
     priority: str | None = None,
     status: str | None = None
 ) -> Any:
+    # Get current user permissions
+    is_admin = any(p in (current_user.authority or []) for p in ["super_admin", "admin"])
+    
     statement = select(Announcement)
-    if active_only:
+    
+    # Non-admins only see active and "Sent" announcements
+    if not is_admin:
         statement = statement.where(Announcement.is_active == True)
+        statement = statement.where(Announcement.status == "Sent")
+    else:
+        # Admins can filter by active_only and status
+        if active_only:
+            statement = statement.where(Announcement.is_active == True)
+        if status:
+            statement = statement.where(Announcement.status == status)
+
     if category:
         statement = statement.where(Announcement.category == category)
     if priority:
         statement = statement.where(Announcement.priority == priority)
-    if status:
-        statement = statement.where(Announcement.status == status)
     
     statement = statement.order_by(desc(Announcement.is_pinned), desc(Announcement.created_at)).offset(skip).limit(limit)
     return session.exec(statement).all()
