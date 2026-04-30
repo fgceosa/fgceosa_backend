@@ -269,7 +269,8 @@ def get_event_registrants(
     """
     Get list of registered members for an event (Admin only).
     """
-    statement = select(EventRegistration).where(EventRegistration.event_id == event_id)
+    from sqlalchemy.orm import selectinload
+    statement = select(EventRegistration).where(EventRegistration.event_id == event_id).options(selectinload(EventRegistration.user))
     registrations = session.exec(statement).all()
     
     # Enrich with user data
