@@ -36,7 +36,7 @@ class UserBase(SQLModel):
     profession: str | None = Field(default=None, max_length=255)
     membership_id: str | None = Field(default=None, max_length=50, unique=True, index=True)
     nickname: str | None = Field(default=None, max_length=150)
-    alternative_email: EmailStr | None = Field(default=None, max_length=255)
+    alternative_email: str | None = Field(default=None, max_length=255)
     gender: str | None = Field(default=None, max_length=50)
     fgce_set: str | None = Field(default=None, max_length=50)
     fgce_house: str | None = Field(default=None, max_length=150)
@@ -58,7 +58,7 @@ class UserRegister(SQLModel):
     first_name: str = Field(max_length=150)
     last_name: str = Field(max_length=150)
     nickname: str | None = Field(default=None, max_length=150)
-    alternative_email: EmailStr | None = Field(default=None, max_length=255)
+    alternative_email: str | None = Field(default=None, max_length=255)
     phone_number: str | None = Field(default=None, max_length=50)
     gender: str = Field(max_length=50)
     fgce_set: str = Field(max_length=50)
@@ -100,7 +100,7 @@ class UserUpdateMe(SQLModel):
     email: EmailStr | None = Field(default=None, max_length=255)
     phone: str | None = Field(default=None, max_length=50)
     nickname: str | None = Field(default=None, max_length=150)
-    alternativeEmail: EmailStr | None = Field(default=None, max_length=255)
+    alternativeEmail: str | None = Field(default=None, max_length=255)
     gender: str | None = Field(default=None, max_length=50)
     fgceSet: str | None = Field(default=None, max_length=50)
     fgceHouse: str | None = Field(default=None, max_length=150)
@@ -174,7 +174,7 @@ class UserPublic(SQLModel):
     name: str | None = None
     nickname: str | None = None
     gender: str | None = None
-    alternativeEmail: EmailStr | None = None
+    alternativeEmail: str | None = None
     fgceSet: str | None = None
     fgceHouse: str | None = None
     phone: str | None = None
@@ -417,6 +417,7 @@ class EventRegistration(SQLModel, table=True):
     user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE", index=True)
     registration_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     notes: str | None = Field(default=None, max_length=500)
+    attendees_count: int = Field(default=1)
     status: str = Field(default="confirmed", max_length=50) # confirmed, cancelled
     
     event: "Event" = Relationship(back_populates="registrations")
@@ -425,6 +426,7 @@ class EventRegistration(SQLModel, table=True):
 class EventRegistrationCreate(SQLModel):
     event_id: uuid.UUID | None = None
     notes: str | None = None
+    attendees_count: int = 1
 
 class EventRegistrationPublic(SQLModel):
     id: uuid.UUID
@@ -432,6 +434,7 @@ class EventRegistrationPublic(SQLModel):
     user_id: uuid.UUID
     registration_date: datetime
     notes: str | None
+    attendees_count: int = 1
     status: str
     user: Optional[UserPublic] = None
 

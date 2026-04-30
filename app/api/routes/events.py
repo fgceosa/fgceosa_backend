@@ -232,17 +232,19 @@ def register_for_event(
         raise HTTPException(status_code=400, detail="You are already registered for this event")
 
     # Check capacity
-    if event.total_registered >= event.capacity:
-        raise HTTPException(status_code=400, detail="Event is already at full capacity")
+    requested_attendees = data.attendees_count if data else 1
+    if event.total_registered + requested_attendees > event.capacity:
+        raise HTTPException(status_code=400, detail=f"Event only has {event.capacity - event.total_registered} spots remaining")
 
     registration = EventRegistration(
         event_id=event_id,
         user_id=current_user.id,
-        notes=data.notes if data else None
+        notes=data.notes if data else None,
+        attendees_count=data.attendees_count if data else 1
     )
     
     # Increment event registration count
-    event.total_registered += 1
+    event.total_registered += registration.attendees_count
     
     session.add(registration)
     session.add(event)
@@ -279,6 +281,7 @@ def get_event_registrants(
             user_id=reg.user_id,
             registration_date=reg.registration_date,
             notes=reg.notes,
+            attendees_count=reg.attendees_count,
             status=reg.status,
             user=UserPublic.from_user(reg.user)
         )
