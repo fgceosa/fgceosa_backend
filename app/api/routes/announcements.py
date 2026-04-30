@@ -71,6 +71,8 @@ def create_announcement(
     session.refresh(announcement)
     return announcement
 
+from app.utils.permissions import user_has_any_role
+
 @router.get("")
 def read_announcements(
     session: SessionDep,
@@ -82,8 +84,8 @@ def read_announcements(
     priority: str | None = None,
     status: str | None = None
 ) -> Any:
-    # Get current user permissions
-    is_admin = any(p in (current_user.authority or []) for p in ["super_admin", "admin"])
+    # Get current user permissions using utility
+    is_admin = user_has_any_role(session, current_user, ["super_admin", "admin"])
     
     statement = select(Announcement)
     
