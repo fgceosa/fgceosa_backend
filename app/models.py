@@ -332,13 +332,15 @@ class Payment(SQLModel, table=True):
     __tablename__ = "payment"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE", index=True)
-    status: str = Field(default="pending", max_length=20) # completed, pending, failed
+    status: str = Field(default="pending", max_length=30) # completed, pending, pending_verification, rejected, failed
     transaction_reference: str = Field(max_length=255, unique=True, index=True)
     amount: Decimal = Field(default=Decimal("0.00"), max_digits=10, decimal_places=2)
     currency: str = Field(default="NGN", max_length=10)
     payment_method: str | None = Field(default=None, max_length=50)
     paystack_id: str | None = Field(default=None, max_length=255, index=True)
     description: str | None = Field(default=None, max_length=500)
+    receipt_url: str | None = Field(default=None, max_length=1000)
+    rejection_reason: str | None = Field(default=None, sa_column=sa.Column(sa.TEXT))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
@@ -358,8 +360,11 @@ class PaymentPublic(PaymentBase):
     status: str
     transaction_reference: str
     payment_method: str | None
+    receipt_url: str | None = None
+    rejection_reason: str | None = None
     created_at: datetime
     updated_at: datetime
+    user: UserPublic | None = None
 
 class PaymentsPublic(SQLModel):
     data: list[PaymentPublic]

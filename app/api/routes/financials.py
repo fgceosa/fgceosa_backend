@@ -256,7 +256,7 @@ async def record_offline_payment(
         amount=Decimal(str(data.amount)),
         status="completed",
         transaction_reference=f"OFF-{uuid.uuid4().hex[:10].upper()}",
-        payment_method=data.paymentMethod,
+        payment_method="bank_transfer" if data.paymentMethod == "transfer" else data.paymentMethod,
         description=data.description or f"Manual recording of {data.category}",
         created_at=datetime.fromisoformat(data.date).replace(tzinfo=timezone.utc) if data.date else datetime.now(timezone.utc)
     )

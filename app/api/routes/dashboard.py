@@ -182,9 +182,11 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
             "ref": p.transaction_reference or f"REF-{str(p.id)[:8]}",
             "date": p.created_at.strftime("%b %d, %Y"),
             "amount": float(p.amount),
-            "status": "Paid" if p.status == "completed" else p.status.capitalize(),
+            "status": "Paid" if p.status == "completed" else "Under Review" if p.status == "pending_verification" else p.status.capitalize(),
             "type": "subscription" if "dues" in (p.description or "").lower() else "event" if "event" in (p.description or "").lower() else "donation",
-            "method": p.payment_method
+            "method": p.payment_method,
+            "rejectionReason": p.rejection_reason,
+            "rejection_reason": p.rejection_reason
         })
 
     # 4. Announcements
