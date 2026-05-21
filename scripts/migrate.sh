@@ -1,6 +1,6 @@
 #!/bin/bash
 # Pre-deploy migration script with automatic healing
-# Handles multiple heads, orphaned migrations, and auto-merging
+# Handles database pre-start check, multiple heads, orphaned migrations, and auto-merging
 
 set -e  # Exit on error
 
@@ -8,15 +8,19 @@ echo "=================================="
 echo "Starting database migration..."
 echo "=================================="
 
-# Setup Copilot Schema (pgvector extension and schema)
-echo "Setting up Copilot schema and pgvector extension..."
+# Step 1: Wait for database connection to be fully ready and reachable
+echo "⏳ Checking database connection..."
+python3 app/backend_pre_start.py
+
+# Step 2: Setup Copilot Schema (pgvector extension and schema)
+echo "⏳ Setting up Copilot schema and pgvector extension..."
 if [ -f "scripts/setup_copilot_schema.sh" ]; then
     bash scripts/setup_copilot_schema.sh || echo "⚠️  Copilot schema setup failed (may already exist)"
 fi
 
-# Try to run migration normally first
-echo "Attempting database upgrade..."
-UPGRADE_OUTPUT=$(alembic upgrade head 2>&1 || true)
+# Step 3: Try to run migration normally
+echo "⏳ Attempting database upgrade..."
+UPGRADE_OUTPUT=$(python3 -m alembic upgrade head 2>&1 || true)
 UPGRADE_EXIT=$?
 
 if [ $UPGRADE_EXIT -eq 0 ]; then
@@ -24,10 +28,10 @@ if [ $UPGRADE_EXIT -eq 0 ]; then
     exit 0
 fi
 
-echo "Migration failed. Analyzing issue..."
+echo "⚠️  Migration failed. Analyzing issue..."
 echo "$UPGRADE_OUTPUT"
 
-# Check for multiple heads error
+# Step 4: Check for multiple heads error
 if echo "$UPGRADE_OUTPUT" | grep -q "Multiple head revisions"; then
     echo ""
     echo "⚠️  Multiple heads detected!"
@@ -38,28 +42,28 @@ if echo "$UPGRADE_OUTPUT" | grep -q "Multiple head revisions"; then
 
     # Create a timestamp-based merge migration
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-    MERGE_RESULT=$(alembic merge -m "auto_merge_deployment_${TIMESTAMP}" heads 2>&1 || true)
+    MERGE_RESULT=$(python3 -m alembic merge -m "auto_merge_deployment_${TIMESTAMP}" heads 2>&1 || true)
 
     if echo "$MERGE_RESULT" | grep -q "Generating"; then
         echo "✅ Merge migration created automatically"
         echo "Now upgrading to merged head..."
-        alembic upgrade head
+        python3 -m alembic upgrade head
         exit $?
     else
         # If auto-merge fails, try upgrading all heads
         echo "⚠️  Auto-merge failed, trying to upgrade all heads..."
-        alembic upgrade heads
+        python3 -m alembic upgrade heads
         exit $?
     fi
 fi
 
-# Check for orphaned revision error
+# Step 5: Check for orphaned revision error
 if echo "$UPGRADE_OUTPUT" | grep -q "Can't locate revision"; then
     echo ""
     echo "⚠️  Orphaned migration detected in database!"
-    echo "This happens when a migration was applied but the file doesn't exist."
+    echo "This happens when a migration was applied in the DB but its file is missing from the codebase."
     echo ""
-    echo "Running state fix script..."
+    echo "🔧 Running safe automatic state healing..."
 
     # Check if fix script exists
     if [ -f "scripts/fix_alembic_state.py" ]; then
