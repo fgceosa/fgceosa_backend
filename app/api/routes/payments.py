@@ -19,6 +19,7 @@ from app.models import (
     PaymentsPublic,
     PaymentCreate,
     Message,
+    User,
 )
 from app.services.payment_service import payment_service
 from pydantic import BaseModel

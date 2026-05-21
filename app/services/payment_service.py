@@ -107,15 +107,22 @@ class PaymentService:
                         # Notify Admins
                         try:
                             from app.utils.notifications import notify_admins
+                            # Fetch user here, before any nested commits
                             user = session.get(User, db_payment.user_id)
+                            user_full_name = user.full_name if user else ""
+                            user_email = user.email if user else ""
+                            user_id_str = str(user.id) if user else str(db_payment.user_id)
+                            payment_id_str = str(db_payment.id)
+                            payment_method_str = db_payment.payment_method
+                            
                             notify_admins(
                                 session=session,
                                 title="Online Payment Received",
-                                description=f"{user.full_name or user.email} paid ₦{amount:,.0f} via {db_payment.payment_method}.",
+                                description=f"{user_full_name or user_email} paid ₦{amount:,.0f} via {payment_method_str}.",
                                 notification_type="success",
                                 metadata={
-                                    "payment_id": str(db_payment.id),
-                                    "user_id": str(user.id),
+                                    "payment_id": payment_id_str,
+                                    "user_id": user_id_str,
                                     "type": "online_payment"
                                 }
                             )
@@ -148,8 +155,8 @@ class PaymentService:
             else:
                 return {"status": "error", "message": verification.get("message", "Verification failed")}
         except Exception as e:
-            logger.error(f"Transaction verification error: {e}")
-            return {"status": "error", "message": str(e)}
+            logger.error(f"Transaction verification error: {e}", exc_info=True)
+            return {"status": "error", "message": f"Verification failed internally: {str(e)}"}
 
 payment_service = PaymentService()
 
