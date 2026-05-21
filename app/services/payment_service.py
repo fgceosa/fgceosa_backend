@@ -6,7 +6,7 @@ from decimal import Decimal
 from sqlmodel import Session, select
 
 from app.core.config import settings
-from app.models import Payment, User
+from app.models import Payment, User, SystemSettings
 from app.payments.payment_factory import PaymentFactory
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,17 @@ class PaymentService:
     def __init__(self):
         self.provider = PaymentFactory.get_provider()
         self.provider_name = PaymentFactory.get_provider_name()
+
+    def _get_active_provider(self, session: Session):
+        """Fetch the active provider, overriding with live DB credentials if available."""
+        system_settings = session.get(SystemSettings, 1)
+        if system_settings and system_settings.paystack_secret_key and self.provider_name == "paystack":
+            from app.payments.providers.paystack.provider import PaystackProvider
+            return PaystackProvider(
+                secret_key=system_settings.paystack_secret_key,
+                public_key=system_settings.paystack_public_key
+            )
+        return self.provider
 
     async def initialize_payment(
         self, 
@@ -37,8 +48,9 @@ class PaymentService:
             "description": description
         }
 
+        provider = self._get_active_provider(session)
         try:
-            result = await self.provider.initialize_payment(
+            result = await provider.initialize_payment(
                 amount=float(amount),
                 user_id=str(user.id),
                 email=user.email,
@@ -76,10 +88,11 @@ class PaymentService:
         """
         Verify a transaction with the active provider using their transaction reference/ID
         """
+        provider = self._get_active_provider(session)
         try:
             # Paystack usually returns the reference in the URL as 'reference'
             # The frontend should pass this as 'transaction_id' to this endpoint
-            verification = await self.provider.verify_payment(transaction_id)
+            verification = await provider.verify_payment(transaction_id)
 
             if verification["status"] == "success":
                 amount = Decimal(str(verification["amount"]))

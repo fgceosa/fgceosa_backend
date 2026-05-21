@@ -25,14 +25,14 @@ class PaystackProvider:
 
     provider_name = "paystack"
 
-    def __init__(self):
+    def __init__(self, secret_key: Optional[str] = None, public_key: Optional[str] = None):
         """Initialize Paystack provider with API credentials."""
-        self.secret_key = settings.PAYSTACK_SECRET_KEY
-        self.public_key = settings.PAYSTACK_PUBLIC_KEY
+        self.secret_key = secret_key or settings.PAYSTACK_SECRET_KEY
+        self.public_key = public_key or settings.PAYSTACK_PUBLIC_KEY
         self.base_url = settings.PAYSTACK_BASE_URL
         self.webhook_secret = settings.PAYSTACK_WEBHOOK_SECRET or self.secret_key
 
-        self.is_test_mode = "test" in self.secret_key.lower()
+        self.is_test_mode = "test" in self.secret_key.lower() if self.secret_key else True
 
         self.headers = {
             "Authorization": f"Bearer {self.secret_key}",
