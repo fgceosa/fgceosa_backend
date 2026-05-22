@@ -118,48 +118,58 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
 
     # Calculate Outstanding Dues
     active_dues = session.exec(select(Due).where(Due.is_active == True)).all()
-    paid_or_pending_payments = session.exec(
-        select(Payment).where(
-            Payment.user_id == current_user.id,
-            Payment.status.in_(["completed", "pending_verification", "pending_verification", "Pending Verification", "Under Review"])
-        )
+    completed_payments = session.exec(
+        select(Payment).where(Payment.user_id == current_user.id, Payment.status == "completed")
+    ).all()
+    
+    pending_payments = session.exec(
+        select(Payment).where(Payment.user_id == current_user.id, Payment.status.in_(["pending_verification", "Pending Verification", "Under Review"]))
     ).all()
     
     active_dues_sorted = sorted(active_dues, key=lambda x: x.due_date, reverse=True)
     
-    # Identify which dues are actually paid by checking payment descriptions
-    unpaid_dues = []
-    paid_due_titles = [p.description for p in paid_or_pending_payments if p.description]
+    unpaid_dues_info = []
+    paid_due_titles = [p.description for p in completed_payments if p.description]
+    pending_due_titles = [p.description for p in pending_payments if p.description]
     
     for due in active_dues_sorted:
-        # Identify which dues are actually paid by checking payment descriptions
-        # Payment descriptions for dues are formatted as "Dues: Title1, Title2" or exact matches
         is_paid = False
         due_title_lower = due.title.lower()
         
         for p_desc in paid_due_titles:
             p_desc_lower = p_desc.lower().strip()
-            
-            # Remove any appended info like " | date: 2026-..."
-            if "|" in p_desc_lower:
-                p_desc_lower = p_desc_lower.split("|")[0].strip()
-                
+            if "|" in p_desc_lower: p_desc_lower = p_desc_lower.split("|")[0].strip()
             if p_desc_lower == due_title_lower:
                 is_paid = True
                 break
             if p_desc_lower.startswith("dues:"):
-                titles_part = p_desc_lower[5:]
-                paid_titles = [t.strip() for t in titles_part.split(",")]
+                paid_titles = [t.strip() for t in p_desc_lower[5:].split(",")]
                 if due_title_lower in paid_titles:
                     is_paid = True
                     break
                     
         if not is_paid:
-            unpaid_dues.append(due)
+            is_pending = False
+            for p_desc in pending_due_titles:
+                p_desc_lower = p_desc.lower().strip()
+                if "|" in p_desc_lower: p_desc_lower = p_desc_lower.split("|")[0].strip()
+                if p_desc_lower == due_title_lower:
+                    is_pending = True
+                    break
+                if p_desc_lower.startswith("dues:"):
+                    pending_titles = [t.strip() for t in p_desc_lower[5:].split(",")]
+                    if due_title_lower in pending_titles:
+                        is_pending = True
+                        break
             
-    outstanding_amount = sum([d.amount for d in unpaid_dues])
-    outstanding_desc = unpaid_dues[0].title if unpaid_dues else None
-    outstanding_due_date = unpaid_dues[0].due_date.strftime("%b %d, %Y") if unpaid_dues and unpaid_dues[0].due_date else None
+            unpaid_dues_info.append({
+                "due": due,
+                "is_pending": is_pending
+            })
+            
+    outstanding_amount = sum([d["due"].amount for d in unpaid_dues_info])
+    outstanding_desc = unpaid_dues_info[0]["due"].title if unpaid_dues_info else None
+    outstanding_due_date = unpaid_dues_info[0]["due"].due_date.strftime("%b %d, %Y") if unpaid_dues_info and unpaid_dues_info[0]["due"].due_date else None
     
     # 2. Upcoming Events
     now = datetime.now(timezone.utc)
@@ -234,8 +244,8 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
             "views": getattr(a, 'views', 0)
         })
 
-    has_pending = any(p.status in ["pending_verification", "Pending Verification", "Under Review"] for p in paid_or_pending_payments)
-    dues_status = "overdue" if outstanding_amount > 0 else ("pending" if has_pending else "paid")
+    has_pending = any(p["is_pending"] for p in unpaid_dues_info)
+    dues_status = "overdue" if outstanding_amount > 0 else "paid"
 
     return {
         "membershipStatus": current_user.status.capitalize() if current_user.status else "Active",
@@ -250,13 +260,14 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
         "outstandingDueDate": outstanding_due_date or "Up to date",
         "unpaidDues": [
             {
-                "id": str(d.id), 
-                "title": d.title, 
-                "amount": float(d.amount),
-                "description": d.description,
-                "dueDate": d.due_date.strftime("%b %d, %Y") if d.due_date else "N/A"
+                "id": str(d["due"].id), 
+                "title": d["due"].title, 
+                "amount": float(d["due"].amount),
+                "description": d["due"].description,
+                "dueDate": d["due"].due_date.strftime("%b %d, %Y") if d["due"].due_date else "N/A",
+                "is_under_review": d["is_pending"]
             } 
-            for d in unpaid_dues
+            for d in unpaid_dues_info
         ],
         "upcomingEvents": events_list,
         "paymentHistory": payments_list,
