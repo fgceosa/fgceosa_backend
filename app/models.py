@@ -192,6 +192,7 @@ class UserPublic(SQLModel):
     accountType: str | None = "individual"
     roles: list[str] = []
     permissions: list[str] = []
+    dues: str | None = None
 
     @classmethod
     def from_user(cls, user: "User") -> "UserPublic":
@@ -257,7 +258,8 @@ class UserPublic(SQLModel):
             lastOnline=last_online,
             accountType=getattr(user, "account_type", "individual"),
             roles=user_role_names,
-            permissions=user_permissions
+            permissions=user_permissions,
+            dues=None # Calculated later in endpoints
         )
 
 

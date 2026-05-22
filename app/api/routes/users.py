@@ -34,6 +34,8 @@ from app.models import (
     UserIdentityRoleUpdate,
     UserUpdateMe,
     UserRole,
+    Payment,
+    Due,
 )
 from app.utils import send_new_account_email, send_email_verification
 from pydantic import BaseModel, Field
@@ -124,9 +126,55 @@ def read_users(
     skip = (page - 1) * page_size
     users = session.exec(statement.offset(skip).limit(page_size)).all()
     
+    # Pre-fetch active dues
+    active_dues = session.exec(select(Due).where(Due.is_active == True)).all()
+    active_dues_sorted = sorted(active_dues, key=lambda x: x.due_date, reverse=True)
+    
+    # Pre-fetch all completed payments for these users
+    user_ids = [u.id for u in users]
+    completed_payments = []
+    if user_ids:
+        completed_payments = session.exec(
+            select(Payment).where(Payment.user_id.in_(user_ids), Payment.status == "completed")
+        ).all()
+        
+    payments_by_user = {}
+    for p in completed_payments:
+        if p.user_id not in payments_by_user:
+            payments_by_user[p.user_id] = []
+        if p.description:
+            payments_by_user[p.user_id].append(p.description)
+            
     public_users = []
     for u in users:
-        public_users.append(UserPublic.from_user(u))
+        pu = UserPublic.from_user(u)
+        
+        # Calculate dues
+        unpaid_dues = []
+        paid_due_titles = payments_by_user.get(u.id, [])
+        for due in active_dues_sorted:
+            is_paid = False
+            due_title_lower = due.title.lower()
+            for p_desc in paid_due_titles:
+                p_desc_lower = p_desc.lower().strip()
+                if p_desc_lower == due_title_lower:
+                    is_paid = True
+                    break
+                if p_desc_lower.startswith("dues:"):
+                    titles_part = p_desc_lower[5:]
+                    paid_titles = [t.strip() for t in titles_part.split(",")]
+                    if due_title_lower in paid_titles:
+                        is_paid = True
+                        break
+            if not is_paid:
+                unpaid_dues.append(due)
+                
+        outstanding_amount = sum([d.amount for d in unpaid_dues])
+        pu.dues = "overdue" if outstanding_amount > 0 else "paid"
+        if len(active_dues) == 0:
+            pu.dues = "paid"
+            
+        public_users.append(pu)
         
     return UsersPublic(data=public_users, count=count)
 
@@ -516,7 +564,40 @@ def read_user_by_id(
     # Simplified for FGCEOSA: Removed legacy Qorebit organization and credit logic
     # that was causing NameErrors after model refactoring.
     
-    return UserPublic.from_user(user)
+    pu = UserPublic.from_user(user)
+    
+    # Calculate dues
+    active_dues = session.exec(select(Due).where(Due.is_active == True)).all()
+    active_dues_sorted = sorted(active_dues, key=lambda x: x.due_date, reverse=True)
+    completed_payments = session.exec(
+        select(Payment).where(Payment.user_id == user.id, Payment.status == "completed")
+    ).all()
+    
+    unpaid_dues = []
+    paid_due_titles = [p.description for p in completed_payments if p.description]
+    for due in active_dues_sorted:
+        is_paid = False
+        due_title_lower = due.title.lower()
+        for p_desc in paid_due_titles:
+            p_desc_lower = p_desc.lower().strip()
+            if p_desc_lower == due_title_lower:
+                is_paid = True
+                break
+            if p_desc_lower.startswith("dues:"):
+                titles_part = p_desc_lower[5:]
+                paid_titles = [t.strip() for t in titles_part.split(",")]
+                if due_title_lower in paid_titles:
+                    is_paid = True
+                    break
+        if not is_paid:
+            unpaid_dues.append(due)
+            
+    outstanding_amount = sum([d.amount for d in unpaid_dues])
+    pu.dues = "overdue" if outstanding_amount > 0 else "paid"
+    if len(active_dues) == 0:
+        pu.dues = "paid"
+        
+    return pu
 
 
 @router.patch(
