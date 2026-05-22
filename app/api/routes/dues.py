@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from app.api import deps
-from app.models import Due, DueCreate, DueUpdate, DuePublic, Message
+from app.models import Due, DueCreate, DueUpdate, DuePublic, Message, User
+from app.utils.notifications import create_notification
 
 router = APIRouter()
 
@@ -34,6 +35,26 @@ def create_due(
     session.add(due)
     session.commit()
     session.refresh(due)
+    
+    try:
+        # Notify all active users about the new due
+        users = session.exec(select(User).where(User.status == "active")).all()
+        formatted_date = due.due_date.strftime("%b %d, %Y") if due.due_date else "the deadline"
+        
+        for user in users:
+            create_notification(
+                session=session,
+                user_id=user.id,
+                title="New Due Available",
+                description=f"A new due '{due.title}' for ₦{float(due.amount):,.2f} has been added. Please check your dashboard and pay by {formatted_date}.",
+                notification_type="warning",
+                metadata={"type": "new_due", "due_id": str(due.id)}
+            )
+    except Exception as e:
+        # Log error but don't fail the due creation
+        import logging
+        logging.getLogger(__name__).error(f"Failed to create due notifications: {e}")
+        
     return due
 
 @router.put("/{id}", response_model=DuePublic)

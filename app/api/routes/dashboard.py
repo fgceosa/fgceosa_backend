@@ -129,8 +129,23 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
     paid_due_titles = [p.description for p in completed_payments if p.description]
     
     for due in active_dues_sorted:
-        # Check if any completed payment description contains this due's title
-        is_paid = any(due.title.lower() in p_desc.lower() for p_desc in paid_due_titles)
+        # Identify which dues are actually paid by checking payment descriptions
+        # Payment descriptions for dues are formatted as "Dues: Title1, Title2" or exact matches
+        is_paid = False
+        due_title_lower = due.title.lower()
+        
+        for p_desc in paid_due_titles:
+            p_desc_lower = p_desc.lower().strip()
+            if p_desc_lower == due_title_lower:
+                is_paid = True
+                break
+            if p_desc_lower.startswith("dues:"):
+                titles_part = p_desc_lower[5:]
+                paid_titles = [t.strip() for t in titles_part.split(",")]
+                if due_title_lower in paid_titles:
+                    is_paid = True
+                    break
+                    
         if not is_paid:
             unpaid_dues.append(due)
             
