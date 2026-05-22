@@ -106,6 +106,18 @@ async def startup_event():
         logger.info("Initializing Main database (roles and superuser)...")
         with Session(engine) as session:
             init_db(session)
+            
+            # EMERGENCY FIX: Re-enable admin@fgceosa.org
+            from app.models import User
+            from sqlmodel import select
+            admin = session.exec(select(User).where(User.email == "admin@fgceosa.org")).first()
+            if admin and not admin.is_active:
+                admin.is_active = True
+                admin.status = "active"
+                session.add(admin)
+                session.commit()
+                logger.info("Admin account successfully re-enabled!")
+
         logger.info("Main database initialization complete.")
 
     except Exception as e:
