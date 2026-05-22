@@ -43,4 +43,4 @@ COPY ./app /app/app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync
 
-CMD ["fastapi", "run", "--workers", "1", "app/main.py"]
+CMD ["bash", "-c", "bash scripts/migrate.sh && fastapi run --workers 1 app/main.py"]
