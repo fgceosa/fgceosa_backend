@@ -118,15 +118,18 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
 
     # Calculate Outstanding Dues
     active_dues = session.exec(select(Due).where(Due.is_active == True)).all()
-    completed_payments = session.exec(
-        select(Payment).where(Payment.user_id == current_user.id, Payment.status == "completed")
+    paid_or_pending_payments = session.exec(
+        select(Payment).where(
+            Payment.user_id == current_user.id,
+            Payment.status.in_(["completed", "pending_verification", "pending_verification", "Pending Verification", "Under Review"])
+        )
     ).all()
     
     active_dues_sorted = sorted(active_dues, key=lambda x: x.due_date, reverse=True)
     
     # Identify which dues are actually paid by checking payment descriptions
     unpaid_dues = []
-    paid_due_titles = [p.description for p in completed_payments if p.description]
+    paid_due_titles = [p.description for p in paid_or_pending_payments if p.description]
     
     for due in active_dues_sorted:
         # Identify which dues are actually paid by checking payment descriptions
@@ -136,6 +139,11 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
         
         for p_desc in paid_due_titles:
             p_desc_lower = p_desc.lower().strip()
+            
+            # Remove any appended info like " | date: 2026-..."
+            if "|" in p_desc_lower:
+                p_desc_lower = p_desc_lower.split("|")[0].strip()
+                
             if p_desc_lower == due_title_lower:
                 is_paid = True
                 break
@@ -226,10 +234,13 @@ def get_member_summary(session: SessionDep, current_user: CurrentUser) -> Any:
             "views": getattr(a, 'views', 0)
         })
 
+    has_pending = any(p.status in ["pending_verification", "Pending Verification", "Under Review"] for p in paid_or_pending_payments)
+    dues_status = "overdue" if outstanding_amount > 0 else ("pending" if has_pending else "paid")
+
     return {
         "membershipStatus": current_user.status.capitalize() if current_user.status else "Active",
         "verified": current_user.is_verified,
-        "duesStatus": "overdue" if outstanding_amount > 0 else "paid",
+        "duesStatus": dues_status,
         "totalPaid": float(total_paid),
         "lastPaymentAmount": float(last_payment.amount) if last_payment else 0,
         "lastPaymentDate": last_payment.created_at.strftime("%b %d, %Y") if last_payment else "No payments",
