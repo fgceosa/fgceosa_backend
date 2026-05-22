@@ -92,7 +92,16 @@ async def startup_event():
     try:
         from app.core.db import engine, init_db
         from sqlmodel import Session
+        from sqlalchemy import text
         
+        # Ensure critical columns exist (handles cases where Alembic migrations fail)
+        logger.info("Ensuring payment table columns exist...")
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE payment ADD COLUMN IF NOT EXISTS receipt_url VARCHAR(1000)"))
+            conn.execute(text("ALTER TABLE payment ADD COLUMN IF NOT EXISTS rejection_reason TEXT"))
+            conn.commit()
+        logger.info("Payment table columns verified.")
+
         # Initialize Main DB (Create roles and first superuser if missing)
         logger.info("Initializing Main database (roles and superuser)...")
         with Session(engine) as session:
