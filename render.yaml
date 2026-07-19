@@ -10,6 +10,10 @@ services:
     plan: starter
     healthCheckPath: /api/v1/utils/health-check
     preDeployCommand: bash scripts/migrate.sh
+    disk:
+      name: uploads
+      mountPath: /app/uploads
+      sizeGB: 1
     envVars:
       - key: PROJECT_NAME
         value: Qorebit
@@ -72,27 +76,7 @@ services:
       - key: NAIRA_TO_CREDIT_RATE
         value: 25
       
-      # Copilot Database Configuration (uses same DB, different schema)
-      - key: COPILOT_POSTGRES_SERVER
-        fromDatabase:
-          name: qorebit-postgres
-          property: host
-      - key: COPILOT_POSTGRES_PORT
-        fromDatabase:
-          name: qorebit-postgres
-          property: port
-      - key: COPILOT_POSTGRES_DB
-        fromDatabase:
-          name: qorebit-postgres
-          property: database
-      - key: COPILOT_POSTGRES_USER
-        fromDatabase:
-          name: qorebit-postgres
-          property: user
-      - key: COPILOT_POSTGRES_PASSWORD
-        fromDatabase:
-          name: qorebit-postgres
-          property: password
+      # Copilot Database Configuration removed
 
 databases:
   - name: qorebit-postgres

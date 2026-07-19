@@ -12,11 +12,8 @@ echo "=================================="
 echo "⏳ Checking database connection..."
 python3 app/backend_pre_start.py
 
-# Step 2: Setup Copilot Schema (pgvector extension and schema)
-echo "⏳ Setting up Copilot schema and pgvector extension..."
-if [ -f "scripts/setup_copilot_schema.sh" ]; then
-    bash scripts/setup_copilot_schema.sh || echo "⚠️  Copilot schema setup failed (may already exist)"
-fi
+# Step 2: Setup Copilot Schema (Removed)
+echo "⏳ Copilot schema setup removed."
 
 # Step 3: Try to run migration normally
 echo "⏳ Attempting database upgrade..."

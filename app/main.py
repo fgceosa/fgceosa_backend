@@ -96,11 +96,21 @@ async def startup_event():
         
         # Ensure critical columns exist (handles cases where Alembic migrations fail)
         logger.info("Ensuring payment table columns exist...")
-        with engine.connect() as conn:
-            conn.execute(text("ALTER TABLE payment ADD COLUMN IF NOT EXISTS receipt_url VARCHAR(1000)"))
-            conn.execute(text("ALTER TABLE payment ADD COLUMN IF NOT EXISTS rejection_reason TEXT"))
-            conn.commit()
-        logger.info("Payment table columns verified.")
+        try:
+            with engine.connect() as conn:
+                # Check if the payment table exists in the database
+                table_exists = conn.execute(text(
+                    "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'payment')"
+                )).scalar()
+                if table_exists:
+                    conn.execute(text("ALTER TABLE payment ADD COLUMN IF NOT EXISTS receipt_url VARCHAR(1000)"))
+                    conn.execute(text("ALTER TABLE payment ADD COLUMN IF NOT EXISTS rejection_reason TEXT"))
+                    conn.commit()
+                    logger.info("Payment table columns verified.")
+                else:
+                    logger.warning("Payment table does not exist yet. Skipping database alteration checks.")
+        except Exception as e:
+            logger.warning(f"Could not verify or alter payment columns on startup: {e}")
 
         # Initialize Main DB (Create roles and first superuser if missing)
         logger.info("Initializing Main database (roles and superuser)...")

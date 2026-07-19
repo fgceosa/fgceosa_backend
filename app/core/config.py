@@ -74,8 +74,7 @@ class Settings(BaseSettings):
     def _strip_whitespace(cls, data: Any) -> Any:
         """Strip whitespace from critical strings"""
         if isinstance(data, dict):
-            for key in ["POSTGRES_SERVER", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", 
-                        "COPILOT_POSTGRES_SERVER", "COPILOT_POSTGRES_USER", "COPILOT_POSTGRES_PASSWORD", "COPILOT_POSTGRES_DB"]:
+            for key in ["POSTGRES_SERVER", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"]:
                 if key in data and isinstance(data[key], str):
                     data[key] = data[key].strip()
         return data
@@ -198,14 +197,7 @@ class Settings(BaseSettings):
     # Postmark API Token (for email tool)
     POSTMARK_API_TOKEN: str = ""
 
-    # Copilot Hub Database (separate pgvector database)
-    # Uses separate database for vector embeddings support
-    COPILOT_POSTGRES_SERVER: str = "localhost"
-    COPILOT_POSTGRES_PORT: int = 5433  # Different port for pgvector database
-    COPILOT_POSTGRES_USER: str = "qorebit_admin"
-    COPILOT_POSTGRES_PASSWORD: str = ""
-    COPILOT_POSTGRES_DB: str = "qorebit_db"
-
+    # Copilot settings removed
     @model_validator(mode="after")
     def _fix_production_defaults(self) -> Self:
         # 1. Handle full URL provided in POSTGRES_SERVER (common mistake)
@@ -221,50 +213,7 @@ class Settings(BaseSettings):
             except Exception:
                 pass
 
-        # 2. In production (e.g. Render), default localhost/5433 won't work.
-        if self.ENVIRONMENT != "local":
-            if self.COPILOT_POSTGRES_SERVER == "localhost":
-                self.COPILOT_POSTGRES_SERVER = self.POSTGRES_SERVER
-            
-            if self.COPILOT_POSTGRES_PORT == 5433:
-                 self.COPILOT_POSTGRES_PORT = self.POSTGRES_PORT
-            
-            if self.COPILOT_POSTGRES_USER == "qorebit_admin" and self.POSTGRES_USER != "qorebit_admin":
-                self.COPILOT_POSTGRES_USER = self.POSTGRES_USER
-            
-            if not self.COPILOT_POSTGRES_PASSWORD:
-                self.COPILOT_POSTGRES_PASSWORD = self.POSTGRES_PASSWORD
-
-            if self.COPILOT_POSTGRES_DB == "qorebit_db" and self.POSTGRES_DB != "qorebit_db":
-                self.COPILOT_POSTGRES_DB = self.POSTGRES_DB
-
         return self
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def COPILOT_DATABASE_URI(self) -> PostgresDsn:
-        """Database URI for Copilot Hub (with pgvector support)"""
-        # For Render PostgreSQL internal connections: no SSL needed
-        is_render_internal = (
-            self.COPILOT_POSTGRES_SERVER.startswith("dpg-") and 
-            ".render.com" not in self.COPILOT_POSTGRES_SERVER
-        )
-        
-        if self.ENVIRONMENT == "local":
-            query = None
-        else:
-            # Force SSL for vector DB in production
-            query = "sslmode=require"
-        
-        return PostgresDsn.build(
-            scheme="postgresql+psycopg",
-            username=self.COPILOT_POSTGRES_USER,
-            password=self.COPILOT_POSTGRES_PASSWORD or self.POSTGRES_PASSWORD,
-            host=self.COPILOT_POSTGRES_SERVER,
-            port=self.COPILOT_POSTGRES_PORT,
-            path=self.COPILOT_POSTGRES_DB,
-            query=query,
-        )
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

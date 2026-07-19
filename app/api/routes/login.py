@@ -118,7 +118,7 @@ def login_access_token(
             "userName": user.full_name or user.email,
             "authority": user_roles,
             "permissions": user_permissions,
-            "avatar": "",  # Can be extended later
+            "avatar": user.avatar or "",
             "email": user.email,
             "tag_number": user.membership_id
         }
