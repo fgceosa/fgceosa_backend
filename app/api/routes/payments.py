@@ -409,3 +409,102 @@ def reject_payment(
         logger.error(f"Failed to send rejection email: {e}")
         
     return payment
+
+
+@router.post("/paystack/webhook")
+async def paystack_webhook(
+    request: Request,
+    session: SessionDep
+) -> Any:
+    """
+    Handle incoming Paystack webhooks to verify and record payments asynchronously.
+    """
+    payload = await request.body()
+    signature = request.headers.get("x-paystack-signature")
+    
+    if not signature:
+        logger.warning("Paystack webhook received without signature header.")
+        raise HTTPException(status_code=400, detail="Missing signature")
+        
+    # Verify signature
+    from app.payments.payment_factory import PaymentFactory
+    provider = PaymentFactory.get_provider()
+    
+    # Check if active credentials override is available from settings
+    system_settings = session.get(SystemSettings, 1)
+    if system_settings and system_settings.paystack_secret_key:
+        from app.payments.providers.paystack.provider import PaystackProvider
+        provider = PaystackProvider(
+            secret_key=system_settings.paystack_secret_key,
+            public_key=system_settings.paystack_public_key
+        )
+        
+    is_valid = await provider.validate_webhook_signature(payload, signature)
+    if not is_valid:
+        logger.warning("Paystack webhook signature verification failed.")
+        raise HTTPException(status_code=400, detail="Invalid signature")
+        
+    data = await request.json()
+    event = data.get("event")
+    
+    if event == "charge.success":
+        event_data = data.get("data", {})
+        reference = event_data.get("reference")
+        amount = Decimal(str(event_data.get("amount", 0))) / 100 # Convert kobo to Naira
+        
+        statement = select(Payment).where(Payment.transaction_reference == reference)
+        payment = session.exec(statement).first()
+        
+        if payment:
+            if payment.status != "completed":
+                payment.status = "completed"
+                payment.paystack_id = str(event_data.get("id"))
+                payment.payment_method = event_data.get("channel") or "paystack"
+                payment.updated_at = datetime.now(timezone.utc)
+                session.add(payment)
+                
+                # Notify Admins
+                try:
+                    from app.utils.notifications import notify_admins
+                    user = session.get(User, payment.user_id)
+                    user_full_name = user.full_name if user else ""
+                    user_email = user.email if user else ""
+                    notify_admins(
+                        session=session,
+                        title="Online Payment Received (Webhook)",
+                        description=f"{user_full_name or user_email} paid ₦{amount:,.0f} via {payment.payment_method}.",
+                        notification_type="success",
+                        metadata={
+                            "payment_id": str(payment.id),
+                            "user_id": str(payment.user_id),
+                            "type": "online_payment"
+                        }
+                    )
+                except Exception as notif_err:
+                    logger.error(f"Failed to notify admins via webhook: {notif_err}")
+
+                # Notify Member
+                try:
+                    from app.utils.notifications import create_notification
+                    create_notification(
+                        session=session,
+                        user_id=payment.user_id,
+                        title="Payment Confirmed",
+                        description=f"Your payment of ₦{amount:,.0f} has been successfully verified. Thank you!",
+                        notification_type="success",
+                        metadata={
+                            "payment_id": str(payment.id),
+                            "type": "payment_confirmed"
+                        }
+                    )
+                except Exception as member_notif_err:
+                    logger.error(f"Failed to notify member via webhook: {member_notif_err}")
+
+                session.commit()
+                logger.info(f"Payment reference {reference} successfully verified via webhook.")
+            else:
+                logger.info(f"Payment reference {reference} was already completed.")
+        else:
+            logger.warning(f"Payment reference {reference} received via webhook but not found in DB.")
+            
+    return {"status": "success"}
