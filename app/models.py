@@ -501,25 +501,25 @@ class SystemSettingsUpdate(SQLModel):
     account_name: str | None = None
 
 class SystemSettingsPublic(SQLModel):
-    association_name: str
-    association_logo: str | None
-    contact_email: str
-    contact_phone: str
-    address: str | None
-    currency: str
-    payment_enabled: bool
+    association_name: str | None = None
+    association_logo: str | None = None
+    contact_email: str | None = None
+    contact_phone: str | None = None
+    address: str | None = None
+    currency: str | None = None
+    payment_enabled: bool | None = None
     paystack_public_key: str | None = None
     paystack_secret_key: str | None = None
-    tax_percentage: Decimal
-    invoice_footer_note: str | None
-    default_member_status: str
-    allow_self_registration: bool
-    enable_email_notifications: bool
-    timezone: str
-    date_format: str
-    bank_name: str | None
-    account_number: str | None
-    account_name: str | None
+    tax_percentage: Decimal | None = None
+    invoice_footer_note: str | None = None
+    default_member_status: str | None = None
+    allow_self_registration: bool | None = None
+    enable_email_notifications: bool | None = None
+    timezone: str | None = None
+    date_format: str | None = None
+    bank_name: str | None = None
+    account_number: str | None = None
+    account_name: str | None = None
 
 
 class Due(SQLModel, table=True):
