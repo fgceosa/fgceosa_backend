@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: qorebit-backend
+    name: fgceosa-backend
     
     runtime: docker
     repo: https://github.com/rockscaleai/qorebit-backend.git
@@ -16,7 +16,7 @@ services:
       sizeGB: 1
     envVars:
       - key: PROJECT_NAME
-        value: Qorebit
+        value: FGC Enugu Alumni Association
       - key: ENVIRONMENT
         value: production
       - key: FRONTEND_HOST
@@ -27,41 +27,54 @@ services:
         generateValue: true
       - key: POSTGRES_SERVER
         fromDatabase:
-          name: qorebit-postgres
+          name: fgceosa-postgres
           property: host
       - key: POSTGRES_PORT
         fromDatabase:
-          name: qorebit-postgres
+          name: fgceosa-postgres
           property: port
       - key: POSTGRES_DB
         fromDatabase:
-          name: qorebit-postgres
+          name: fgceosa-postgres
           property: database
       - key: POSTGRES_USER
         fromDatabase:
-          name: qorebit-postgres
+          name: fgceosa-postgres
           property: user
       - key: POSTGRES_PASSWORD
         fromDatabase:
-          name: qorebit-postgres
+          name: fgceosa-postgres
           property: password
       - key: FIRST_SUPERUSER
         sync: false
       - key: FIRST_SUPERUSER_PASSWORD
-        generateValue: true
-      - key: SMTP_HOST
         sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false
+      
+      # --- Email: Postmark ---
+      - key: EMAIL_PROVIDER
+        value: postmark
       - key: EMAILS_FROM_EMAIL
-        sync: false
+        value: hello@allfgcealumni.org
       - key: EMAILS_FROM_NAME
+        value: FGC Enugu Alumni Association
+      - key: POSTMARK_SERVER_TOKEN
         sync: false
-      - key: SENTRY_DSN
+      - key: POSTMARK_MESSAGE_STREAM
+        value: notification
+
+      # --- Payments: Paystack ---
+      - key: PAYMENT_PROVIDER
+        value: paystack
+      - key: PAYSTACK_PUBLIC_KEY
         sync: false
-      # Monnify Payment Gateway Configuration
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_WEBHOOK_SECRET
+        sync: false
+      - key: PAYSTACK_BASE_URL
+        value: https://api.paystack.co
+
+      # --- Monnify (optional fallback) ---
       - key: MONNIFY_BASE_URL
         value: https://api.monnify.com
       - key: MONNIFY_API_KEY
@@ -70,16 +83,9 @@ services:
         sync: false
       - key: MONNIFY_CONTRACT_CODE
         sync: false
-      - key: MONNIFY_WEBHOOK_SECRET
-        generateValue: true
-      # Credit System Configuration
-      - key: NAIRA_TO_CREDIT_RATE
-        value: 25
-      
-      # Copilot Database Configuration removed
 
 databases:
-  - name: qorebit-postgres
-    databaseName: qorebit
-    user: qorebit
+  - name: fgceosa-postgres
+    databaseName: fgceosa
+    user: fgceosa
     plan: free

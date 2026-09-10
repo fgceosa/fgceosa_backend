@@ -33,7 +33,8 @@ def read_system_settings(
         currency=db_settings.currency,
         payment_enabled=db_settings.payment_enabled,
         paystack_public_key=db_settings.paystack_public_key or app_settings.PAYSTACK_PUBLIC_KEY,
-        paystack_secret_key=db_settings.paystack_secret_key or app_settings.PAYSTACK_SECRET_KEY,
+        # Never expose the secret key to the frontend
+        paystack_secret_key=None,
         tax_percentage=db_settings.tax_percentage,
         invoice_footer_note=db_settings.invoice_footer_note,
         default_member_status=db_settings.default_member_status,

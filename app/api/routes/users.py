@@ -230,13 +230,13 @@ def create_user(*, session: SessionDep, current_user: CurrentUser, user_in: User
                 roles_str = ', '.join([r.replace('_', ' ').title() for r in user_in.roles])
                 role_desc = f" with roles: {roles_str}"
 
-            custom_msg = f"You have been invited to join Qorebit HQ{role_desc}."
+            custom_msg = f"You have been invited to join ALLFGCEOSA{role_desc}."
 
             from app.utils import send_team_invitation_email
             send_team_invitation_email(
                 email_to=user_in.email,
                 inviter_name=current_user.full_name or current_user.email,
-                workspace_name="Qorebit HQ",
+                workspace_name="ALLFGCEOSA",
                 invitation_link=invitation_link,
                 custom_message=custom_msg
             )
@@ -561,7 +561,7 @@ def read_user_by_id(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    # Simplified for FGCEOSA: Removed legacy Qorebit organization and credit logic
+    # Simplified for FGCEOSA: Removed legacy organization and credit logic
     # that was causing NameErrors after model refactoring.
     
     pu = UserPublic.from_user(user)
@@ -684,7 +684,7 @@ def delete_user(
         )
     
     # Protection for root admin
-    if user.email == "admin@qorebit.com" or user.email == settings.FIRST_SUPERUSER:
+    if user.email == "admin@allfgceosa.com" or user.email == settings.FIRST_SUPERUSER:
         raise HTTPException(
             status_code=403, detail="System protected root admin account cannot be deleted"
         )

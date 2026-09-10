@@ -1,75 +1,152 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Credit Purchase Confirmation</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Payment Confirmed - ALLFGCEOSA</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
+    body { margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Inter', Arial, sans-serif; }
+    a { color: #8B0000; text-decoration: none; }
+  </style>
 </head>
-
-<body
-    style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #ffffff;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-        <!-- Header -->
-        <div
-            style="background-color: #0047AB; padding: 40px 20px; text-align: center; border-radius: 12px; margin-bottom: 20px;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
-                Top-up Successful! 💰
-            </h1>
-        </div>
-
-        <!-- Content -->
-        <div style="padding: 20px; background-color: #fafbfc; border-radius: 12px;">
-            <p style="font-size: 16px; color: #333333; margin-bottom: 24px;">Hello {{ username }},</p>
-
-            <p style="font-size: 16px; color: #333333; line-height: 1.6; margin-bottom: 30px;">
-                Your credit purchase was successful! Your account has been credited with <span
-                    style="color: #0047AB; font-weight: 700; font-size: 18px;">{{
-                    credits_purchased }} credits</span>.
-            </p>
-
-            <!-- Details Box -->
-            <div
-                style="background-color: #ffffff; border-left: 4px solid #0047AB; border-radius: 4px; padding: 25px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <div style="margin-bottom: 12px; font-size: 15px; color: #555555;">
-                    <span style="font-weight: 700; color: #333333; display: inline-block; width: 140px;">Amount
-                        Paid:</span>
-                    ₦{{ amount_paid }}
-                </div>
-                <div style="margin-bottom: 12px; font-size: 15px; color: #555555;">
-                    <span style="font-weight: 700; color: #333333; display: inline-block; width: 140px;">Credits
-                        Added:</span>
-                    {{ credits_purchased }}
-                </div>
-                <div style="margin-bottom: 12px; font-size: 15px; color: #555555;">
-                    <span style="font-weight: 700; color: #333333; display: inline-block; width: 140px;">Transaction
-                        ID:</span>
-                    {{ transaction_id }}
-                </div>
-                <div style="font-size: 15px; color: #555555;">
-                    <span style="font-weight: 700; color: #333333; display: inline-block; width: 140px;">Status:</span>
-                    <span style="color: #0047AB; font-weight: 700;">Completed</span>
-                </div>
-            </div>
-
-            <p style="font-size: 16px; line-height: 1.6; color: #333333; margin-bottom: 40px;">
-                These credits are now available for use across all {{ project_name }} services.
-            </p>
-
-            <!-- CTA Button -->
-            <div style="text-align: center; margin-bottom: 20px;">
-                <a href="{{ dashboard_link }}"
-                    style="background-color: #0047AB; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; display: inline-block;">Go
-                    to Dashboard</a>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div style="text-align: center; padding: 30px 20px; color: #8898aa; font-size: 13px;">
-            <p style="margin-bottom: 10px;">This is an automated notification from {{ project_name }}</p>
-            <p style="margin: 0;">© 2025 {{ project_name }}. All rights reserved.</p>
-        </div>
-    </div>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Inter',Arial,sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f1f5f9;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:560px;">
+          <!-- Header / Logo -->
+          <tr>
+            <td align="center" style="padding-bottom: 32px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td align="center" style="padding: 12px 24px; background-color: #8B0000; border-radius: 12px;">
+                    <span style="font-size: 22px; font-weight: 900; color: #ffffff; letter-spacing: 1px;">ALLFGCEOSA</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-top: 8px; font-size: 12px; color: #64748b; letter-spacing: 0.3px;">
+                    FGC Enugu Old Students Association
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#ffffff; border-radius:20px; box-shadow:0 4px 24px rgba(0,0,0,0.07); overflow:hidden;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr><td style="height:4px; background: linear-gradient(90deg,#8B0000 0%,#700000 100%);"></td></tr>
+                <tr>
+                  <td style="padding: 48px 40px 40px 40px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <!-- Icon -->
+                      <tr>
+                        <td align="center" style="padding-bottom: 28px;">
+                          <div style="display:inline-block; background-color:#fef2f2; border-radius:50%; padding:16px;">
+                            <img src="https://img.icons8.com/fluency/96/money.png" alt="Payment" width="48" height="48" style="display:block;" />
+                          </div>
+                        </td>
+                      </tr>
+                      <!-- Heading -->
+                      <tr>
+                        <td align="center" style="padding-bottom: 8px;">
+                          <h1 style="margin:0; font-size:26px; font-weight:700; color:#0f172a; letter-spacing:-0.5px;">Payment Confirmed</h1>
+                        </td>
+                      </tr>
+                      <!-- Subheading -->
+                      <tr>
+                        <td align="center" style="padding-bottom: 32px;">
+                          <p style="margin:0; font-size:15px; color:#64748b;">Your payment has been successfully processed</p>
+                        </td>
+                      </tr>
+                      <!-- Divider -->
+                      <tr><td style="height:1px; background-color:#f1f5f9; padding-bottom:32px;"></td></tr>
+                      <!-- Body text -->
+                      <tr>
+                        <td style="padding-top:32px; padding-bottom:28px;">
+                          <p style="margin:0 0 16px 0; font-size:15px; line-height:1.7; color:#334155;">Hi <strong>{{ username }}</strong>,</p>
+                          <p style="margin:0; font-size:15px; line-height:1.7; color:#334155;">Your payment has been confirmed. Here are the details of your transaction:</p>
+                        </td>
+                      </tr>
+                      <!-- Payment details box -->
+                      <tr>
+                        <td style="padding-bottom:28px;">
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                              <td style="background-color:#fef2f2; border:1px solid #fecaca; border-radius:12px; padding:24px 28px;">
+                                <p style="margin:0 0 16px 0; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:#8B0000;">Transaction Details</p>
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                  <tr>
+                                    <td style="padding-bottom:12px; border-bottom:1px solid #fecaca;">
+                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                          <td>
+                                            <p style="margin:0; font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Credits Purchased</p>
+                                            <p style="margin:4px 0 0 0; font-size:18px; font-weight:700; color:#8B0000;">{{ credits_purchased }}</p>
+                                          </td>
+                                          <td align="right">
+                                            <p style="margin:0; font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Amount Paid</p>
+                                            <p style="margin:4px 0 0 0; font-size:18px; font-weight:700; color:#0f172a;">{{ amount_paid }}</p>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td style="padding-top:12px;">
+                                      <p style="margin:0; font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Transaction ID</p>
+                                      <p style="margin:4px 0 0 0; font-size:13px; font-weight:600; color:#334155; font-family:monospace; word-break:break-all;">{{ transaction_id }}</p>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- Button -->
+                      <tr>
+                        <td align="center" style="padding-bottom: 28px;">
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                              <td style="border-radius:10px; background-color:#8B0000;">
+                                <a href="{{ dashboard_link }}" target="_blank" style="display:inline-block; padding:14px 36px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:10px; background-color:#8B0000; letter-spacing:0.2px;">Go to Portal</a>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- Fallback link -->
+                      <tr>
+                        <td>
+                          <p style="margin:0 0 6px 0; font-size:12px; color:#94a3b8;">If the button doesn't work, copy and paste this link into your browser:</p>
+                          <p style="margin:0; font-size:12px; color:#8B0000; word-break:break-all;">{{ dashboard_link }}</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 32px 20px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <p style="margin: 0 0 6px 0; font-size: 13px; color: #94a3b8;">&copy; {{ year if year else '2026' }} ALLFGCEOSA &mdash; FGC Enugu Old Students Association</p>
+                    <p style="margin: 0; font-size: 12px; color: #cbd5e1;">Connecting Alumni. Celebrating Legacy.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
-
 </html>

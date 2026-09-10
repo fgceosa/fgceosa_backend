@@ -34,7 +34,13 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "changethis"
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    FRONTEND_HOST: str = "https://app.qorebit.ai"
+
+    # Defensive: if FRONTEND_HOST is accidentally set as a comma-separated list,
+    # strip whitespace and take the last valid URL (most specific production URL).
+    FRONTEND_HOST: Annotated[str, BeforeValidator(
+        lambda v: v.strip().split(",")[-1].strip() if isinstance(v, str) and "," in v else (v.strip() if isinstance(v, str) else v)
+    )] = "https://portal.allfgcealumni.org"
+
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
     BACKEND_CORS_ORIGINS: Annotated[
@@ -125,8 +131,8 @@ class Settings(BaseSettings):
 
     # Postmark Email Service Configuration
     POSTMARK_SERVER_TOKEN: str | None = None
-    POSTMARK_MESSAGE_STREAM: str = "outbound"  # Default stream for transactional emails
-    EMAIL_PROVIDER: Literal["smtp", "postmark"] = "smtp"  # smtp or postmark
+    POSTMARK_MESSAGE_STREAM: str = "notification"  # Custom stream for transactional emails
+    EMAIL_PROVIDER: Literal["smtp", "postmark"] = "postmark"  # Default to postmark
 
     @computed_field  # type: ignore[prop-decorator]
     @property
