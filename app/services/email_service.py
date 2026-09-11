@@ -833,6 +833,44 @@ class EmailService:
             },
         )
 
+    def send_new_due_notification(
+        self,
+        *,
+        email_to: str,
+        username: str,
+        due_title: str,
+        due_amount: str,
+        formatted_date: str,
+    ) -> Dict[str, Any]:
+        """Send notification about a new due"""
+        context = {
+            "project_name": settings.PROJECT_NAME,
+            "username": username,
+            "due_title": due_title,
+            "due_amount": due_amount,
+            "formatted_date": formatted_date,
+            "dashboard_link": f"{settings.FRONTEND_HOST}/dashboard/payments",
+            "year": datetime.utcnow().year,
+        }
+
+        html_content = self.render_template(
+            template_name="new_due_notification.html",
+            context=context,
+        )
+
+        return self.send_email(
+            email_to=email_to,
+            subject=f"New Association Due: {due_title}",
+            html_content=html_content,
+            email_type=EmailType.WORKSPACE_NOTIFICATION,
+            metadata={
+                "username": username,
+                "due_title": due_title,
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+        )
+
 
 # Create singleton instance
 email_service = EmailService()
+

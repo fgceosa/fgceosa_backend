@@ -1,13 +1,50 @@
 from typing import Any
 import uuid
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlmodel import Session, select
+import logging
 
 from app.api import deps
 from app.models import Due, DueCreate, DueUpdate, DuePublic, Message, User
 from app.utils.notifications import create_notification
+from app.core.db import engine
+from sqlmodel import Session as SQLSession
 
 router = APIRouter()
+
+def process_due_notifications_background(user_data: list, due_id: str, title: str, amount: float, formatted_date: str):
+    """Background task to send in-app and email notifications to all members."""
+    from app.services.email_service import email_service
+    amount_str = f"{amount:,.2f}"
+    
+    with SQLSession(engine) as db_session:
+        for uid, email, name in user_data:
+            # 1. In-app notification
+            try:
+                create_notification(
+                    session=db_session,
+                    user_id=uid,
+                    title="New Due Available",
+                    description=f"A new due '{title}' for ₦{amount_str} has been added. Please check your dashboard and pay by {formatted_date}.",
+                    notification_type="warning",
+                    metadata={"type": "new_due", "due_id": str(due_id)}
+                )
+                db_session.commit()
+            except Exception as e:
+                logging.getLogger(__name__).error(f"In-app notification failed for user {uid}: {e}")
+            
+            # 2. Email notification
+            if email:
+                try:
+                    email_service.send_new_due_notification(
+                        email_to=email,
+                        username=name or "Member",
+                        due_title=title,
+                        due_amount=amount_str,
+                        formatted_date=formatted_date,
+                    )
+                except Exception as e:
+                    logging.getLogger(__name__).error(f"Due email failed for {email}: {e}")
 
 @router.get("", response_model=list[DuePublic])
 def read_dues(
@@ -26,10 +63,11 @@ def create_due(
     *,
     session: Session = Depends(deps.get_db),
     due_in: DueCreate,
+    background_tasks: BackgroundTasks,
     current_user = Depends(deps.get_current_active_superuser),
 ) -> Any:
     """
-    Create new due.
+    Create new due and notify all active members.
     """
     due = Due.model_validate(due_in)
     session.add(due)
@@ -37,23 +75,21 @@ def create_due(
     session.refresh(due)
     
     try:
-        # Notify all active users about the new due
+        # Fetch active users and pass necessary data to background task
         users = session.exec(select(User).where(User.status == "active")).all()
+        user_data = [(u.id, u.email, u.full_name) for u in users]
         formatted_date = due.due_date.strftime("%b %d, %Y") if due.due_date else "the deadline"
         
-        for user in users:
-            create_notification(
-                session=session,
-                user_id=user.id,
-                title="New Due Available",
-                description=f"A new due '{due.title}' for ₦{float(due.amount):,.2f} has been added. Please check your dashboard and pay by {formatted_date}.",
-                notification_type="warning",
-                metadata={"type": "new_due", "due_id": str(due.id)}
-            )
+        background_tasks.add_task(
+            process_due_notifications_background,
+            user_data=user_data,
+            due_id=str(due.id),
+            title=due.title,
+            amount=float(due.amount),
+            formatted_date=formatted_date
+        )
     except Exception as e:
-        # Log error but don't fail the due creation
-        import logging
-        logging.getLogger(__name__).error(f"Failed to create due notifications: {e}")
+        logging.getLogger(__name__).error(f"Failed to queue due notifications: {e}")
         
     return due
 
