@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Receipt</title>
+  <style>
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #f4f4f7; font-family: Arial, sans-serif; }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f7;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 520px;">
+          <!-- Logo Header -->
+          <tr>
+            <td align="center" style="padding-bottom: 32px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td align="center">
+                    <img src="https://portal.allfgcealumni.org/fgceosa_logo.jpg" alt="ALLFGCEOSA Logo" style="height: 100px; width: auto; display: block; border: 0;" />
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-top: 12px; font-size: 12px; color: #64748b; letter-spacing: 0.3px;">
+                    FGC Enugu Old Students Association
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Card Body -->
+          <tr>
+            <td>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);">
+                <tr>
+                  <td style="padding: 40px;">
+                    <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 700; color: #0f172a; text-align: center;">Payment Successful!</h1>
+                    <p style="margin: 0 0 20px 0; font-size: 15px; color: #475569; line-height: 1.6;">
+                      Hi {{ username }},
+                    </p>
+                    <p style="margin: 0 0 24px 0; font-size: 15px; color: #475569; line-height: 1.6;">
+                      Thank you for your payment. Your transaction was successful and your payment has been received. Please find your invoice attached to this email.
+                    </p>
+                    <!-- Details Box -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #fef2f2; border-radius: 10px; border: 1px solid #fee2e2; margin-bottom: 32px;">
+                      <tr>
+                        <td style="padding: 20px;">
+                          <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #64748b;">Description</p>
+                          <p style="margin: 0 0 16px 0; font-size: 16px; font-weight: 500; color: #0f172a; white-space: pre-wrap;">{{ description }}</p>
+                          
+                          <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #64748b;">Amount Paid</p>
+                          <p style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: #0f172a;">₦{{ amount }}</p>
+
+                          <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #64748b;">Transaction Reference</p>
+                          <p style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">{{ transaction_id }}</p>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td align="center">
+                          <a href="{{ dashboard_link }}" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 600; color: #ffffff; background-color: #8B0000; text-decoration: none; border-radius: 8px;">
+                            Go to Dashboard
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 32px 20px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <p style="margin: 0 0 6px 0; font-size: 13px; color: #94a3b8;">
+                      &copy; {{ year }} ALLFGCEOSA &mdash; FGC Enugu Old Students Association
+                    </p>
+                    <p style="margin: 0; font-size: 12px; color: #cbd5e1;">
+                      Connecting Alumni. Celebrating Legacy.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

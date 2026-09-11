@@ -289,39 +289,19 @@ def approve_payment(
     except Exception as e:
         logger.error(f"Failed to create notification for approved payment: {e}")
         
-    # Send email confirmation
+    # Send email confirmation with PDF
     try:
         from app.services.email_service import email_service
         user = session.get(User, payment.user_id)
         if user and user.email:
-            email_html = f"""
-            <!DOCTYPE html>
-            <html>
-            <body style="font-family: 'Inter', Arial, sans-serif; padding: 40px; background-color: #f9f9f9;">
-                <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 24px; border: 1px solid #eee;">
-                    <h2 style="color: #2e7d32; font-size: 24px; font-weight: 800; margin-bottom: 24px;">Payment Receipt & Confirmation</h2>
-                    <p style="font-size: 16px; color: #444; line-height: 1.6;">Hello <strong>{{user.full_name or 'Member'}}</strong>,</p>
-                    <p style="font-size: 16px; color: #444; line-height: 1.6;">Your bank transfer payment proof has been successfully verified and approved.</p>
-                    
-                    <div style="margin: 32px 0; padding: 24px; background-color: #e8f5e9; border-radius: 16px; border: 1px solid #c8e6c9;">
-                        <div style="font-size: 12px; font-weight: 800; color: #2e7d32; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Amount Credited</div>
-                        <div style="font-size: 32px; font-weight: 900; color: #2e7d32;">₦{{float(payment.amount):,.2f}}</div>
-                        <div style="font-size: 14px; color: #555; margin-top: 8px;">Ref: {payment.transaction_reference}</div>
-                    </div>
-
-                    <p style="font-size: 15px; color: #666; margin-bottom: 32px;">This serves as official confirmation of your payment. Thank you for your support of FGCEOSA.</p>
-                    
-                    <hr style="border: 0; border-top: 1px solid #eee; margin: 40px 0;">
-                    <p style="font-size: 12px; color: #999; text-align: center;">FGCEOSA Alumni Network</p>
-                </div>
-            </body>
-            </html>
-            """
-            email_service.send_email(
+            import threading
+            threading.Thread(target=lambda: email_service.send_payment_receipt_with_invoice(
                 email_to=user.email,
-                subject="Payment Approved & Confirmed - FGCEOSA",
-                html_content=email_html
-            )
+                username=user.full_name or "Member",
+                amount=float(payment.amount),
+                description=payment.description or "Manual Payment Verification",
+                transaction_id=payment.transaction_reference or str(payment.id)
+            )).start()
     except Exception as e:
         logger.error(f"Failed to send approval email: {e}")
         
@@ -499,6 +479,21 @@ async def paystack_webhook(
                     )
                 except Exception as member_notif_err:
                     logger.error(f"Failed to notify member via webhook: {member_notif_err}")
+                
+                # Send Receipt Email
+                try:
+                    from app.services.email_service import email_service
+                    if user and user.email:
+                        import threading
+                        threading.Thread(target=lambda: email_service.send_payment_receipt_with_invoice(
+                            email_to=user.email,
+                            username=user.full_name or "Member",
+                            amount=float(payment.amount),
+                            description=payment.description or "Online Payment",
+                            transaction_id=payment.transaction_reference or str(payment.id)
+                        )).start()
+                except Exception as receipt_err:
+                    logger.error(f"Failed to send payment receipt via webhook: {receipt_err}")
 
                 session.commit()
                 logger.info(f"Payment reference {reference} successfully verified via webhook.")

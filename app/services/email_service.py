@@ -839,6 +839,7 @@ class EmailService:
         email_to: str,
         username: str,
         due_title: str,
+        due_description: str,
         due_amount: str,
         formatted_date: str,
     ) -> Dict[str, Any]:
@@ -847,6 +848,7 @@ class EmailService:
             "project_name": settings.PROJECT_NAME,
             "username": username,
             "due_title": due_title,
+            "due_description": due_description,
             "due_amount": due_amount,
             "formatted_date": formatted_date,
             "dashboard_link": f"{settings.FRONTEND_HOST}/dashboard/payments",
@@ -870,6 +872,65 @@ class EmailService:
             },
         )
 
+
+    def send_payment_receipt_with_invoice(
+        self,
+        *,
+        email_to: str,
+        username: str,
+        amount: float,
+        description: str,
+        transaction_id: str,
+    ) -> Dict[str, Any]:
+        """Send payment receipt email with PDF invoice attached"""
+        from app.utils.pdf_generator import generate_invoice_pdf
+        
+        amount_str = f"{amount:,.2f}"
+        context = {
+            "project_name": settings.PROJECT_NAME,
+            "username": username,
+            "amount": amount_str,
+            "description": description,
+            "transaction_id": transaction_id,
+            "dashboard_link": f"{settings.FRONTEND_HOST}/dashboard/payments",
+            "year": datetime.utcnow().year,
+        }
+
+        html_content = self.render_template(
+            template_name="payment_receipt.html",
+            context=context,
+        )
+        
+        # Generate PDF
+        pdf_bytes = generate_invoice_pdf({
+            "member_name": username,
+            "email": email_to,
+            "amount": amount,
+            "description": description,
+            "transaction_id": transaction_id,
+            "date": datetime.utcnow().strftime('%B %d, %Y')
+        })
+        
+        attachments = [
+            {
+                "filename": f"Invoice_{transaction_id}.pdf",
+                "content": list(pdf_bytes),  # resend python sdk often prefers list of ints or bytes
+            }
+        ]
+
+        return self.send_email(
+            email_to=email_to,
+            subject=f"Payment Receipt & Invoice - {settings.PROJECT_NAME}",
+            html_content=html_content,
+            email_type=EmailType.TRANSACTION_ALERT,
+            attachments=attachments,
+            metadata={
+                "username": username,
+                "transaction_id": transaction_id,
+                "amount": str(amount),
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+        )
 
 # Create singleton instance
 email_service = EmailService()

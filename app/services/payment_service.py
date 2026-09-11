@@ -159,6 +159,21 @@ class PaymentService:
                         except Exception as member_notif_err:
                             logger.error(f"Failed to notify member: {member_notif_err}")
 
+                        # Send Receipt Email
+                        try:
+                            from app.services.email_service import email_service
+                            if user and user.email:
+                                import threading
+                                threading.Thread(target=lambda: email_service.send_payment_receipt_with_invoice(
+                                    email_to=user.email,
+                                    username=user.full_name or "Member",
+                                    amount=float(db_payment.amount),
+                                    description=db_payment.description or "Association Payment",
+                                    transaction_id=db_payment.transaction_reference or str(db_payment.id)
+                                )).start()
+                        except Exception as receipt_err:
+                            logger.error(f"Failed to send payment receipt: {receipt_err}")
+
                         session.commit()
                         session.refresh(db_payment)
                     
