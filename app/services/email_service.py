@@ -617,7 +617,7 @@ class EmailService:
                 "username": username,
                 "credits_purchased": credits_purchased,
                 "amount_paid": amount_paid,
-                "transaction_id": transaction_id,
+                "transaction_id": short_ref,
                 "dashboard_link": f"{settings.FRONTEND_HOST}/dashboard",
             },
         )
@@ -631,7 +631,7 @@ class EmailService:
                 "username": username,
                 "credits": str(credits_purchased),
                 "amount": str(amount_paid),
-                "transaction_id": transaction_id,
+                "transaction_id": short_ref,
                 "timestamp": datetime.utcnow().isoformat(),
             },
         )
@@ -886,12 +886,20 @@ class EmailService:
         from app.utils.pdf_generator import generate_invoice_pdf
         
         amount_str = f"{amount:,.2f}"
+        
+        raw_ref = transaction_id
+        parts = raw_ref.split('-')
+        if len(parts) >= 4 and raw_ref.startswith('FGCEOSA-PSTK'):
+            short_ref = parts[2].upper()
+        else:
+            short_ref = raw_ref[:12].upper()
+            
         context = {
             "project_name": settings.PROJECT_NAME,
             "username": username,
             "amount": amount_str,
             "description": description,
-            "transaction_id": transaction_id,
+            "transaction_id": short_ref,
             "dashboard_link": f"{settings.FRONTEND_HOST}/dashboard/payments",
             "year": datetime.utcnow().year,
         }
@@ -907,7 +915,7 @@ class EmailService:
             "email": email_to,
             "amount": amount,
             "description": description,
-            "transaction_id": transaction_id,
+            "transaction_id": short_ref,
             "date": datetime.utcnow().strftime('%B %d, %Y')
         })
         
@@ -926,7 +934,7 @@ class EmailService:
             attachments=attachments,
             metadata={
                 "username": username,
-                "transaction_id": transaction_id,
+                "transaction_id": short_ref,
                 "amount": str(amount),
                 "timestamp": datetime.utcnow().isoformat(),
             },
