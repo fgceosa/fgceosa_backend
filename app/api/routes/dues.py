@@ -12,7 +12,7 @@ from sqlmodel import Session as SQLSession
 
 router = APIRouter()
 
-def process_due_notifications_background(user_data: list, due_id: str, title: str, amount: float, formatted_date: str):
+def process_due_notifications_background(user_data: list, due_id: str, title: str, description: str, amount: float, formatted_date: str):
     """Background task to send in-app and email notifications to all members."""
     from app.services.email_service import email_service
     amount_str = f"{amount:,.2f}"
@@ -40,6 +40,7 @@ def process_due_notifications_background(user_data: list, due_id: str, title: st
                         email_to=email,
                         username=name or "Member",
                         due_title=title,
+                        due_description=description or "No additional description provided.",
                         due_amount=amount_str,
                         formatted_date=formatted_date,
                     )
@@ -85,6 +86,7 @@ def create_due(
             user_data=user_data,
             due_id=str(due.id),
             title=due.title,
+            description=due.description,
             amount=float(due.amount),
             formatted_date=formatted_date
         )
