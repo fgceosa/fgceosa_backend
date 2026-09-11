@@ -74,6 +74,15 @@ class EmailService:
                 logger.error(f"Failed to initialize Postmark client: {e}")
                 self.postmark_client = None
 
+        # Initialize Resend client if configured
+        if self.provider == "resend" and settings.RESEND_API_KEY:
+            try:
+                import resend
+                resend.api_key = settings.RESEND_API_KEY
+                logger.info("Resend email service initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize Resend client: {e}")
+
     @retry(
         retry=retry_if_exception_type(PostmarkerException),
         stop=stop_after_attempt(3),
@@ -119,7 +128,20 @@ class EmailService:
             }
 
         try:
-            if self.provider == "postmark" and self.postmark_client:
+            if self.provider == "resend":
+                result = self._send_via_resend(
+                    email_to=email_to,
+                    subject=subject,
+                    html_content=html_content,
+                    text_content=text_content,
+                    email_type=email_type,
+                    cc=cc,
+                    bcc=bcc,
+                    reply_to=reply_to,
+                    attachments=attachments,
+                    metadata=metadata,
+                )
+            elif self.provider == "postmark" and self.postmark_client:
                 result = self._send_via_postmark(
                     email_to=email_to,
                     subject=subject,
@@ -150,6 +172,53 @@ class EmailService:
                 f"Failed to send email to {email_to} | Type: {email_type} | Error: {str(e)}"
             )
             raise
+
+    def _send_via_resend(
+        self,
+        *,
+        email_to: str,
+        subject: str,
+        html_content: str,
+        text_content: str | None,
+        email_type: EmailType,
+        cc: Optional[List[str]] = None,
+        bcc: Optional[List[str]] = None,
+        reply_to: Optional[str] = None,
+        attachments: Optional[List[Dict[str, Any]]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Send email via Resend"""
+        import resend
+        if not settings.RESEND_API_KEY:
+            raise ValueError("Resend API key not configured")
+
+        params: Dict[str, Any] = {
+            "from": f"{settings.EMAILS_FROM_NAME} <{settings.EMAILS_FROM_EMAIL}>",
+            "to": email_to,
+            "subject": subject,
+            "html": html_content,
+            "tags": [{"name": "type", "value": email_type.value}],
+        }
+        if text_content:
+            params["text"] = text_content
+        if cc:
+            params["cc"] = cc if isinstance(cc, list) else [cc]
+        if bcc:
+            params["bcc"] = bcc if isinstance(bcc, list) else [bcc]
+        if reply_to:
+            params["reply_to"] = reply_to
+        if attachments:
+            params["attachments"] = attachments
+        
+        response = resend.Emails.send(params)
+
+        return {
+            "status": "sent",
+            "provider": "resend",
+            "message_id": response.get("id") if isinstance(response, dict) else getattr(response, "id", None),
+            "to": email_to,
+            "email_type": email_type.value,
+        }
 
     def _send_via_postmark(
         self,

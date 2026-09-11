@@ -108,6 +108,7 @@ dependencies = [
     { name = "python-docx" },
     { name = "python-multipart" },
     { name = "redis" },
+    { name = "resend" },
     { name = "sentry-sdk", extra = ["fastapi"] },
     { name = "sqlmodel" },
     { name = "structlog" },
@@ -160,6 +161,7 @@ requires-dist = [
     { name = "python-docx", specifier = ">=1.1.0" },
     { name = "python-multipart", specifier = ">=0.0.7,<1.0.0" },
     { name = "redis", specifier = ">=5.0.0" },
+    { name = "resend", specifier = ">=2.44.0" },
     { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=1.40.6,<2.0.0" },
     { name = "sqlmodel", specifier = ">=0.0.21,<1.0.0" },
     { name = "structlog", specifier = ">=25.5.0" },
@@ -3127,6 +3129,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/42/f2/05f29bc3913aea15eb670be136045bf5c5bbf4b99ecb839da9b422bb2c85/requests-oauthlib-2.0.0.tar.gz", hash = "sha256:b3dffaebd884d8cd778494369603a9e7b58d29111bf6b41bdc2dcd87203af4e9", size = 55650, upload-time = "2024-03-22T20:32:29.939Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3b/5d/63d4ae3b9daea098d5d6f5da83984853c1bbacd5dc826764b249fe119d24/requests_oauthlib-2.0.0-py2.py3-none-any.whl", hash = "sha256:7dd8a5c40426b779b0868c404bdef9768deccf22749cde15852df527e6269b36", size = 24179, upload-time = "2024-03-22T20:32:28.055Z" },
+]
+
+[[package]]
+name = "resend"
+version = "2.44.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fb/09/ccb59cf591571758af0b18efc65468b65023f420c10b8e4e9858f061dea2/resend-2.44.0.tar.gz", hash = "sha256:832c15a44c7ca9a7c8501316f48ffcbdce328ec1711b6695b741b0e354be9aff", size = 61158, upload-time = "2026-09-10T14:19:22.146Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/99/e7/87966376759e7411aaf9f5d726868127b2d659ff5de2138b8843627b8af3/resend-2.44.0-py2.py3-none-any.whl", hash = "sha256:695c3cb75c4c2f169fd3ee31db6bc49814e449978f8c1b33b94eeb7b093cedbc", size = 92909, upload-time = "2026-09-10T14:19:20.579Z" },
 ]
 
 [[package]]

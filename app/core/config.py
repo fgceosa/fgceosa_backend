@@ -132,12 +132,18 @@ class Settings(BaseSettings):
     # Postmark Email Service Configuration
     POSTMARK_SERVER_TOKEN: str | None = None
     POSTMARK_MESSAGE_STREAM: str = "notification"  # Custom stream for transactional emails
-    EMAIL_PROVIDER: Literal["smtp", "postmark"] = "postmark"  # Default to postmark
+    
+    # Resend Email Service Configuration
+    RESEND_API_KEY: str | None = None
+
+    EMAIL_PROVIDER: Literal["smtp", "postmark", "resend"] = "resend"  # Default to resend
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def emails_enabled(self) -> bool:
-        if self.EMAIL_PROVIDER == "postmark":
+        if self.EMAIL_PROVIDER == "resend":
+            return bool(self.RESEND_API_KEY and self.EMAILS_FROM_EMAIL)
+        elif self.EMAIL_PROVIDER == "postmark":
             return bool(self.POSTMARK_SERVER_TOKEN and self.EMAILS_FROM_EMAIL)
         return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 

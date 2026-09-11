@@ -50,13 +50,15 @@ services:
       - key: FIRST_SUPERUSER_PASSWORD
         sync: false
       
-      # --- Email: Postmark ---
+      # --- Email: Resend & Postmark ---
       - key: EMAIL_PROVIDER
-        value: postmark
+        value: resend
       - key: EMAILS_FROM_EMAIL
         value: hello@allfgcealumni.org
       - key: EMAILS_FROM_NAME
         value: FGC Enugu Alumni Association
+      - key: RESEND_API_KEY
+        sync: false
       - key: POSTMARK_SERVER_TOKEN
         sync: false
       - key: POSTMARK_MESSAGE_STREAM
