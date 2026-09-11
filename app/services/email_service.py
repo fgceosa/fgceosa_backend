@@ -78,7 +78,7 @@ class EmailService:
         if self.provider == "resend" and settings.RESEND_API_KEY:
             try:
                 import resend
-                resend.api_key = settings.RESEND_API_KEY
+                resend.api_key = settings.RESEND_API_KEY.strip()
                 logger.info("Resend email service initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize Resend client: {e}")

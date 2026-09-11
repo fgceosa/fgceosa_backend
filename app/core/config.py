@@ -80,7 +80,7 @@ class Settings(BaseSettings):
     def _strip_whitespace(cls, data: Any) -> Any:
         """Strip whitespace from critical strings"""
         if isinstance(data, dict):
-            for key in ["POSTGRES_SERVER", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"]:
+            for key in ["POSTGRES_SERVER", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", "RESEND_API_KEY"]:
                 if key in data and isinstance(data[key], str):
                     data[key] = data[key].strip()
         return data
