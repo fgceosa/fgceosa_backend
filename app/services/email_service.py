@@ -950,7 +950,7 @@ class EmailService:
         html_content = self.render_template(template_name="pending_approval.html", context=context)
         return self.send_email(
             email_to=email_to,
-            subject=f"Registration Under Review - {settings.PROJECT_NAME}",
+            subject="Registration Under Review - ALLFGCEOSA",
             html_content=html_content,
             email_type=EmailType.WORKSPACE_NOTIFICATION
         )

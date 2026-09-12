@@ -1,16 +1,102 @@
 <!DOCTYPE html>
 <html>
-<body style="margin: 0; padding: 40px; background-color: #f4f4f7; font-family: Inter, Arial, sans-serif;">
-  <div style="max-width: 520px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; border: 1px solid #fee2e2;">
-    <h1 style="color: #8B0000; font-size: 22px; margin-bottom: 20px;">Account Approved!</h1>
-    <p style="color: #475569; font-size: 15px; line-height: 1.6;">Hello {{ username }},</p>
-    <p style="color: #475569; font-size: 15px; line-height: 1.6;">Great news! Your account on the ALLFGCEOSA portal has been officially approved.</p>
-    <p style="color: #475569; font-size: 15px; line-height: 1.6;">You can now log in and access all features of the alumni platform.</p>
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="{{ login_link }}" style="display: inline-block; padding: 14px 32px; background: #8B0000; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Log In Now</a>
-    </div>
-    <hr style="border: 0; border-top: 1px solid #fee2e2; margin: 30px 0;">
-    <p style="color: #94a3b8; font-size: 12px; text-align: center;">&copy; {{ year }} ALLFGCEOSA &mdash; Connecting Alumni. Celebrating Legacy.</p>
-  </div>
+<head>
+  <meta charset="utf-8">
+  <title>Account Approved</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Inter', Arial, sans-serif; }
+    a { color: #8B0000; text-decoration: none; }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Inter',Arial,sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f1f5f9;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:560px;">
+          <!-- Header / Logo -->
+          <tr>
+            <td align="center" style="padding-bottom: 32px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td align="center">
+                  <img src="https://portal.allfgcealumni.org/fgceosa_logo.jpg" alt="ALLFGCEOSA Logo" style="height: 100px; width: auto; display: block; border: 0;" />
+                </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-top: 8px; font-size: 12px; color: #64748b; letter-spacing: 0.3px;">
+                    FGC Enugu Old Students Association
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#ffffff; border-radius:20px; box-shadow:0 4px 24px rgba(0,0,0,0.07); overflow:hidden;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr><td style="height:4px; background: linear-gradient(90deg,#8B0000 0%,#700000 100%);"></td></tr>
+                <tr>
+                  <td style="padding: 48px 40px 40px 40px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <!-- Icon -->
+                      <tr>
+                        <td align="center" style="padding-bottom: 28px;">
+                          <div style="display:inline-block; background-color:#fef2f2; border-radius:50%; padding:16px;">
+                            <img src="https://img.icons8.com/fluency/96/ok--v1.png" alt="Approved" width="48" height="48" style="display:block;" />
+                          </div>
+                        </td>
+                      </tr>
+                      <!-- Heading -->
+                      <tr>
+                        <td align="center" style="padding-bottom: 8px;">
+                          <h1 style="margin:0; font-size:26px; font-weight:700; color:#0f172a; letter-spacing:-0.5px;">Account Approved!</h1>
+                        </td>
+                      </tr>
+                      <!-- Divider -->
+                      <tr><td style="height:1px; background-color:#f1f5f9; margin-top:24px; padding-bottom:32px;"></td></tr>
+                      <!-- Body text -->
+                      <tr>
+                        <td style="padding-top:32px; padding-bottom:28px;">
+                          <p style="margin:0 0 16px 0; font-size:15px; line-height:1.7; color:#334155;">Hello <strong>{{ username }}</strong>,</p>
+                          <p style="margin:0 0 16px 0; font-size:15px; line-height:1.7; color:#334155;">Great news! Your account on the ALLFGCEOSA portal has been officially approved.</p>
+                          <p style="margin:0; font-size:15px; line-height:1.7; color:#334155;">You can now log in and access all features of the alumni platform.</p>
+                        </td>
+                      </tr>
+                      <!-- Button -->
+                      <tr>
+                        <td align="center" style="padding-bottom: 28px;">
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                              <td style="border-radius:10px; background-color:#8B0000;">
+                                <a href="{{ login_link }}" target="_blank" style="display:inline-block; padding:14px 36px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:10px; background-color:#8B0000; letter-spacing:0.2px;">Log In Now</a>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 32px 20px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <p style="margin: 0 0 6px 0; font-size: 13px; color: #94a3b8;">&copy; {{ year if year else '2026' }} ALLFGCEOSA &mdash; FGC Enugu Old Students Association</p>
+                    <p style="margin: 0 0 6px 0; font-size: 12px; color: #cbd5e1;">Connecting Alumni. Celebrating Legacy.</p>
+                    <p style="margin: 0; font-size: 12px; color: #94a3b8;">Need help? Contact us at <a href="mailto:hello@allfgcealumni.org" style="color: #8B0000; font-weight: bold;">hello@allfgcealumni.org</a></p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
