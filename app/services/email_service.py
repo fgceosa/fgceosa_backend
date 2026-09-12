@@ -405,7 +405,7 @@ class EmailService:
                 "project_name": settings.PROJECT_NAME,
                 "username": username,
                 "email": email_to,
-                "login_link": f"{settings.FRONTEND_HOST}/login",
+                "login_link": f"{settings.FRONTEND_HOST}/sign-in",
                 "dashboard_link": f"{settings.FRONTEND_HOST}/dashboard",
             },
         )
@@ -959,7 +959,7 @@ class EmailService:
         context = {
             "project_name": settings.PROJECT_NAME,
             "username": username,
-            "login_link": f"{settings.FRONTEND_HOST}/login",
+            "login_link": f"{settings.FRONTEND_HOST}/sign-in",
             "year": datetime.utcnow().year,
         }
         html_content = self.render_template(template_name="account_approved.html", context=context)
