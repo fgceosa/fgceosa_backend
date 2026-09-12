@@ -412,7 +412,7 @@ class EmailService:
 
         return self.send_email(
             email_to=email_to,
-            subject=f"Welcome to {settings.PROJECT_NAME}!",
+            subject=f"Welcome to ALLFGCEOSA!",
             html_content=html_content,
             email_type=EmailType.WELCOME,
             metadata={"username": username, "timestamp": datetime.utcnow().isoformat()},
@@ -437,7 +437,7 @@ class EmailService:
 
         return self.send_email(
             email_to=email_to,
-            subject=f"{settings.PROJECT_NAME} - Password Recovery",
+            subject=f"ALLFGCEOSA - Password Recovery",
             html_content=html_content,
             email_type=EmailType.PASSWORD_RESET,
             metadata={"email": email, "timestamp": datetime.utcnow().isoformat()},
@@ -590,7 +590,7 @@ class EmailService:
 
         return self.send_email(
             email_to=email_to,
-            subject=f"Low Credit Balance Alert - {settings.PROJECT_NAME}",
+            subject=f"Low Credit Balance Alert - ALLFGCEOSA",
             html_content=html_content,
             email_type=EmailType.CREDIT_LOW,
             metadata={
@@ -624,7 +624,7 @@ class EmailService:
 
         return self.send_email(
             email_to=email_to,
-            subject=f"Credit Purchase Confirmation - {settings.PROJECT_NAME}",
+            subject=f"Credit Purchase Confirmation - ALLFGCEOSA",
             html_content=html_content,
             email_type=EmailType.CREDIT_PURCHASED,
             metadata={
@@ -653,7 +653,7 @@ class EmailService:
 
         return self.send_email(
             email_to=email_to,
-            subject=f"New API Key Created - {settings.PROJECT_NAME}",
+            subject=f"New API Key Created - ALLFGCEOSA",
             html_content=html_content,
             email_type=EmailType.API_KEY_CREATED,
             metadata={
@@ -672,7 +672,7 @@ class EmailService:
 
         return self.send_email(
             email_to=email_to,
-            subject=f"{settings.PROJECT_NAME} - Test Email",
+            subject=f"ALLFGCEOSA - Test Email",
             html_content=html_content,
             email_type=EmailType.TEST,
             metadata={"timestamp": datetime.utcnow().isoformat()},
@@ -767,7 +767,7 @@ class EmailService:
         setup_link: str
     ) -> Dict[str, Any]:
         """Send organization setup email to new admin"""
-        subject = f"Welcome to {settings.PROJECT_NAME} - Setup your organization"
+        subject = f"Welcome to ALLFGCEOSA - Setup your organization"
         
         # Use a template or fallback logic
         html_content = self.render_template(
@@ -823,7 +823,7 @@ class EmailService:
 
         return self.send_email(
             email_to=email_to,
-            subject=f"Action Required: Payment Reminder - {settings.PROJECT_NAME}",
+            subject=f"Action Required: Payment Reminder - ALLFGCEOSA",
             html_content=html_content,
             email_type=EmailType.PAYMENT_REMINDER,
             metadata={
@@ -928,7 +928,7 @@ class EmailService:
 
         return self.send_email(
             email_to=email_to,
-            subject=f"Payment Receipt & Invoice - {settings.PROJECT_NAME}",
+            subject=f"Payment Receipt & Invoice - ALLFGCEOSA",
             html_content=html_content,
             email_type=EmailType.TRANSACTION_ALERT,
             attachments=attachments,
@@ -965,7 +965,7 @@ class EmailService:
         html_content = self.render_template(template_name="account_approved.html", context=context)
         return self.send_email(
             email_to=email_to,
-            subject=f"Account Approved - Welcome to {settings.PROJECT_NAME}!",
+            subject=f"Account Approved - Welcome to ALLFGCEOSA!",
             html_content=html_content,
             email_type=EmailType.WORKSPACE_NOTIFICATION
         )
@@ -979,7 +979,7 @@ class EmailService:
         html_content = self.render_template(template_name="account_rejected.html", context=context)
         return self.send_email(
             email_to=email_to,
-            subject=f"Registration Update - {settings.PROJECT_NAME}",
+            subject=f"Registration Update - ALLFGCEOSA",
             html_content=html_content,
             email_type=EmailType.WORKSPACE_NOTIFICATION
         )
