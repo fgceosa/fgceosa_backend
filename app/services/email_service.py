@@ -947,7 +947,7 @@ class EmailService:
             "username": username,
             "year": datetime.utcnow().year,
         }
-        html_content = self.render_template("pending_approval.html", context=context)
+        html_content = self.render_template(template_name="pending_approval.html", context=context)
         return self.send_email(
             email_to=email_to,
             subject=f"Registration Under Review - {settings.PROJECT_NAME}",
@@ -962,7 +962,7 @@ class EmailService:
             "login_link": f"{settings.FRONTEND_HOST}/login",
             "year": datetime.utcnow().year,
         }
-        html_content = self.render_template("account_approved.html", context=context)
+        html_content = self.render_template(template_name="account_approved.html", context=context)
         return self.send_email(
             email_to=email_to,
             subject=f"Account Approved - Welcome to {settings.PROJECT_NAME}!",
@@ -976,7 +976,7 @@ class EmailService:
             "username": username,
             "year": datetime.utcnow().year,
         }
-        html_content = self.render_template("account_rejected.html", context=context)
+        html_content = self.render_template(template_name="account_rejected.html", context=context)
         return self.send_email(
             email_to=email_to,
             subject=f"Registration Update - {settings.PROJECT_NAME}",
