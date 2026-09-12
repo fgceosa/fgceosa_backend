@@ -940,6 +940,50 @@ class EmailService:
             },
         )
 
+
+    def send_pending_approval_notification(self, *, email_to: str, username: str) -> Dict[str, Any]:
+        context = {
+            "project_name": settings.PROJECT_NAME,
+            "username": username,
+            "year": datetime.utcnow().year,
+        }
+        html_content = self.render_template("pending_approval.html", context=context)
+        return self.send_email(
+            email_to=email_to,
+            subject=f"Registration Under Review - {settings.PROJECT_NAME}",
+            html_content=html_content,
+            email_type=EmailType.WORKSPACE_NOTIFICATION
+        )
+
+    def send_account_approved_notification(self, *, email_to: str, username: str) -> Dict[str, Any]:
+        context = {
+            "project_name": settings.PROJECT_NAME,
+            "username": username,
+            "login_link": f"{settings.FRONTEND_HOST}/login",
+            "year": datetime.utcnow().year,
+        }
+        html_content = self.render_template("account_approved.html", context=context)
+        return self.send_email(
+            email_to=email_to,
+            subject=f"Account Approved - Welcome to {settings.PROJECT_NAME}!",
+            html_content=html_content,
+            email_type=EmailType.WORKSPACE_NOTIFICATION
+        )
+
+    def send_account_rejected_notification(self, *, email_to: str, username: str) -> Dict[str, Any]:
+        context = {
+            "project_name": settings.PROJECT_NAME,
+            "username": username,
+            "year": datetime.utcnow().year,
+        }
+        html_content = self.render_template("account_rejected.html", context=context)
+        return self.send_email(
+            email_to=email_to,
+            subject=f"Registration Update - {settings.PROJECT_NAME}",
+            html_content=html_content,
+            email_type=EmailType.WORKSPACE_NOTIFICATION
+        )
+
 # Create singleton instance
 email_service = EmailService()
 

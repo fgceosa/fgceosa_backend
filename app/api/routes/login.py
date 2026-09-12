@@ -54,6 +54,20 @@ def login_access_token(
                 detail="your account has been deactivated, please contact our support team for help"
             )
         
+        # Check if user account is pending approval
+        if user.status == "pending_approval":
+            raise HTTPException(
+                status_code=403, 
+                detail="Your account is currently pending admin approval. You will receive an email once approved."
+            )
+            
+        # Check if user account is rejected
+        if user.status == "rejected":
+            raise HTTPException(
+                status_code=403, 
+                detail="Your registration was declined. Please contact the association for more details."
+            )
+
         # Check if user account is inactive (not yet activated)
         if user.status != "active":
             raise HTTPException(

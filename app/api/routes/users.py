@@ -540,13 +540,33 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
         accept_terms=user_in.accept_terms
     )
     
-    # Send verification email only if not verified
-    # TODO: Bring back email verification later
-    # if not user.is_verified:
-    #     try:
-    #         send_email_verification(email_to=user.email, username=user.full_name or user.email)
-    #     except Exception as e:
-    #         logger.error(f"Failed to send verification email to {user.email}: {e}")
+    # Set user to pending approval
+    user.status = "pending_approval"
+    user.is_active = False
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    
+    # Send pending approval email
+    try:
+        from app.services.email_service import email_service
+        email_service.send_pending_approval_notification(email_to=user.email, username=user.full_name or user.email)
+    except Exception as e:
+        logger.error(f"Failed to send pending approval email to {user.email}: {e}")
+        
+    # Notify admins
+    try:
+        from app.utils.notifications import notify_admins
+        notify_admins(
+            session=session,
+            title="New Member Registration",
+            description=f"{user.full_name or user.email} has registered and requires approval.",
+            notification_type="info",
+            metadata={"user_id": str(user.id), "type": "new_registration"}
+        )
+    except Exception as e:
+        logger.error(f"Failed to notify admins of new registration: {e}")
+
     return UserPublic.from_user(user)
 
 
@@ -1005,3 +1025,68 @@ def allocate_user_credits(
     
     return {"id": user.id, "newBalance": float(new_balance), "orgId": str(owned_org.id) if owned_org else None}
 
+
+@router.post("/{user_id}/approve", dependencies=[Depends(deps.get_current_active_superuser)])
+def approve_user(user_id: uuid.UUID, session: SessionDep) -> Any:
+    """Approve a pending user registration."""
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.status == "active":
+        raise HTTPException(status_code=400, detail="User is already active")
+        
+    user.status = "active"
+    user.is_active = True
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    
+    # Send approval email
+    try:
+        from app.services.email_service import email_service
+        email_service.send_account_approved_notification(email_to=user.email, username=user.full_name or user.email)
+    except Exception as e:
+        logger.error(f"Failed to send approval email to {user.email}: {e}")
+        
+    # Send in-app notification
+    try:
+        from app.utils.notifications import create_notification
+        create_notification(
+            session=session,
+            user_id=user.id,
+            title="Account Approved",
+            description="Your account has been approved by the administrators.",
+            notification_type="success",
+            metadata={"type": "account_approved"}
+        )
+        session.commit()
+    except Exception as e:
+        logger.error(f"Failed to create approval notification for {user.email}: {e}")
+        
+    return {"message": "User approved successfully"}
+
+@router.post("/{user_id}/reject", dependencies=[Depends(deps.get_current_active_superuser)])
+def reject_user(user_id: uuid.UUID, session: SessionDep) -> Any:
+    """Reject a pending user registration."""
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if user.status == "active":
+        raise HTTPException(status_code=400, detail="Cannot reject an already active user")
+        
+    user.status = "rejected"
+    user.is_active = False
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    
+    # Send rejection email
+    try:
+        from app.services.email_service import email_service
+        email_service.send_account_rejected_notification(email_to=user.email, username=user.full_name or user.email)
+    except Exception as e:
+        logger.error(f"Failed to send rejection email to {user.email}: {e}")
+        
+    return {"message": "User rejected successfully"}
