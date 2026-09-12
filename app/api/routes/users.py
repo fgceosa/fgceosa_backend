@@ -1026,7 +1026,9 @@ def allocate_user_credits(
     return {"id": user.id, "newBalance": float(new_balance), "orgId": str(owned_org.id) if owned_org else None}
 
 
-@router.post("/{user_id}/approve", dependencies=[Depends(deps.get_current_active_superuser)])
+from app.api.deps import get_current_active_superuser
+
+@router.post("/{user_id}/approve", dependencies=[Depends(get_current_active_superuser)])
 def approve_user(user_id: uuid.UUID, session: SessionDep) -> Any:
     """Approve a pending user registration."""
     user = session.get(User, user_id)
@@ -1066,7 +1068,7 @@ def approve_user(user_id: uuid.UUID, session: SessionDep) -> Any:
         
     return {"message": "User approved successfully"}
 
-@router.post("/{user_id}/reject", dependencies=[Depends(deps.get_current_active_superuser)])
+@router.post("/{user_id}/reject", dependencies=[Depends(get_current_active_superuser)])
 def reject_user(user_id: uuid.UUID, session: SessionDep) -> Any:
     """Reject a pending user registration."""
     user = session.get(User, user_id)
