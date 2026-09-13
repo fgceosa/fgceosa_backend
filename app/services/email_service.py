@@ -397,6 +397,28 @@ class EmailService:
     # Pre-defined Email Templates
     # ============================================
 
+
+    def send_new_account_email(self, *, email_to: str, username: str, password: str) -> Dict[str, Any]:
+        """Send new account email with credentials"""
+        context = {
+            "project_name": settings.PROJECT_NAME,
+            "username": username,
+            "password": password,
+            "email": email_to,
+            "link": f"{settings.FRONTEND_HOST}/sign-in"
+        }
+        
+        html_content = self.render_template(
+            template_name="new_account.html",
+            context=context
+        )
+        
+        return self.send_email(
+            email_to=email_to,
+            subject=f"Welcome to ALLFGCEOSA",
+            html_content=html_content
+        )
+
     def send_welcome_email(self, *, email_to: str, username: str) -> Dict[str, Any]:
         """Send welcome email to new user"""
         html_content = self.render_template(
