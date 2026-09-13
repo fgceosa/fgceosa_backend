@@ -1171,9 +1171,17 @@ def bulk_import_users(
         city = normalized_row.get('city') or normalized_row.get('location') or ''
         country = normalized_row.get('country') or ''
         
-        # Generate a temporary password (e.g., 12 random characters)
-        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-        temp_password = ''.join(secrets.choice(alphabet) for i in range(12))
+        # Generate a simpler, human-readable temporary password
+        base_name = first_name.capitalize() if first_name else "Alumni"
+        # Remove spaces or weird characters
+        base_name = re.sub(r'[^a-zA-Z]', '', base_name)
+        if not base_name:
+            base_name = "Alumni"
+        
+        # Format: Name2026@XYZ (e.g., James2026@412) - Passes all typical strong password checks
+        import random
+        random_suffix = random.randint(100, 999)
+        temp_password = f"{base_name}2026@{random_suffix}" 
 
         try:
             # Create user
