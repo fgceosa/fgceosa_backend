@@ -1190,10 +1190,16 @@ def bulk_import_users(
                 city=city,
                 country=country,
                 is_active=True,
-                status="active",
-                password=get_password_hash(temp_password)
+                password=temp_password
             )
-            user = User.model_validate(user_create)
+            
+            # Use repository to correctly hash password, generate membership ID, and assign roles
+            user = user_repository.create_user(
+                session=session,
+                user_create=user_create,
+                accept_terms=True
+            )
+            user.status = "active"
             session.add(user)
             session.commit()
             
