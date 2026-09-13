@@ -9,7 +9,11 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, BackgroundTasks
+import csv
+import io
+import secrets
+import string
 from sqlmodel import delete, func, select, update, desc
 from sqlalchemy.orm import selectinload
 
@@ -1092,3 +1096,117 @@ def reject_user(user_id: uuid.UUID, session: SessionDep) -> Any:
         logger.error(f"Failed to send rejection email to {user.email}: {e}")
         
     return {"message": "User rejected successfully"}
+
+@router.post("/bulk-import", dependencies=[Depends(get_current_active_superuser)])
+def bulk_import_users(
+    background_tasks: BackgroundTasks,
+    session: SessionDep,
+    file: UploadFile = File(...)
+) -> Any:
+    """
+    Bulk import users from a CSV file.
+    """
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Only CSV files are allowed")
+
+    try:
+        content = file.file.read().decode("utf-8-sig")  # utf-8-sig handles BOM
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {e}")
+
+    reader = csv.DictReader(io.StringIO(content))
+    success_count = 0
+    failed_count = 0
+    errors = []
+
+    # Map possible CSV headers to model fields to be very flexible
+    def normalize_key(k):
+        return re.sub(r'[^a-zA-Z0-9]', '', str(k).lower()) if k else ''
+
+    for index, row in enumerate(reader):
+        row_num = index + 2
+        normalized_row = {normalize_key(k): str(v).strip() for k, v in row.items() if k and v}
+        
+        # Try to extract email
+        email = normalized_row.get('email') or normalized_row.get('emailaddress') or normalized_row.get('e-mail')
+        
+        if not email:
+            failed_count += 1
+            errors.append(f"Row {row_num}: Missing email address")
+            continue
+            
+        # Check if user already exists
+        statement = select(User).where(User.email == email)
+        existing_user = session.exec(statement).first()
+        if existing_user:
+            failed_count += 1
+            errors.append(f"Row {row_num}: User with email {email} already exists")
+            continue
+
+        # Extract other fields flexibly
+        first_name = normalized_row.get('firstname') or normalized_row.get('first') or ''
+        last_name = normalized_row.get('lastname') or normalized_row.get('last') or ''
+        
+        # Fallback if there's just a 'name' or 'fullname' column
+        if not first_name and not last_name:
+            full_name = normalized_row.get('name') or normalized_row.get('fullname') or ''
+            parts = full_name.split(' ', 1)
+            if parts:
+                first_name = parts[0]
+                if len(parts) > 1:
+                    last_name = parts[1]
+                
+        phone = normalized_row.get('phone') or normalized_row.get('phonenumber') or ''
+        fgce_set = normalized_row.get('set') or normalized_row.get('fgceset') or normalized_row.get('class') or ''
+        fgce_house = normalized_row.get('house') or normalized_row.get('fgcehouse') or ''
+        gender = normalized_row.get('gender') or normalized_row.get('sex') or ''
+        city = normalized_row.get('city') or normalized_row.get('location') or ''
+        country = normalized_row.get('country') or ''
+        
+        # Generate a temporary password (e.g., 12 random characters)
+        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+        temp_password = ''.join(secrets.choice(alphabet) for i in range(12))
+
+        try:
+            # Create user
+            user_create = UserCreate(
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                full_name=f"{first_name} {last_name}".strip(),
+                phone=phone,
+                phone_number=phone,
+                fgce_set=fgce_set,
+                fgce_house=fgce_house,
+                gender=gender,
+                city=city,
+                country=country,
+                is_active=True,
+                status="active",
+                password=get_password_hash(temp_password)
+            )
+            user = User.model_validate(user_create)
+            session.add(user)
+            session.commit()
+            
+            # Queue email
+            from app.services.email_service import email_service
+            background_tasks.add_task(
+                email_service.send_new_account_email,
+                email_to=email,
+                username=user.full_name or email,
+                password=temp_password
+            )
+            success_count += 1
+            
+        except Exception as e:
+            session.rollback()
+            failed_count += 1
+            errors.append(f"Row {row_num}: Database error - {str(e)}")
+            logger.error(f"Error importing user {email}: {e}")
+
+    return {
+        "success_count": success_count,
+        "failed_count": failed_count,
+        "errors": errors
+    }
