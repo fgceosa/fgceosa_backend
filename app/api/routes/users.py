@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, BackgroundTasks
 import csv
+import re
 import io
 import secrets
 import string
