@@ -1106,15 +1106,22 @@ def bulk_import_users(
     """
     Bulk import users from a CSV file.
     """
-    if not file.filename.endswith('.csv'):
-        raise HTTPException(status_code=400, detail="Only CSV files are allowed")
+    filename = file.filename.lower()
+    if not (filename.endswith('.csv') or filename.endswith('.xlsx') or filename.endswith('.xls')):
+        raise HTTPException(status_code=400, detail="Only CSV and Excel files are allowed")
 
     try:
-        content = file.file.read().decode("utf-8-sig")  # utf-8-sig handles BOM
+        if filename.endswith('.csv'):
+            content = file.file.read().decode("utf-8-sig")
+            reader = list(csv.DictReader(io.StringIO(content)))
+        else:
+            import pandas as pd
+            file_content = file.file.read()
+            df = pd.read_excel(io.BytesIO(file_content))
+            df = df.fillna('')
+            reader = df.to_dict('records')
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to read file: {e}")
-
-    reader = csv.DictReader(io.StringIO(content))
     success_count = 0
     failed_count = 0
     errors = []
